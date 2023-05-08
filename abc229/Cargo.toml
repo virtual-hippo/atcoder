@@ -1,0 +1,51 @@
+[package]
+name = "abc229"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc229-a = { alias = "a", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_a" }
+abc229-b = { alias = "b", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_b" }
+abc229-c = { alias = "c", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_c" }
+abc229-d = { alias = "d", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_d" }
+abc229-e = { alias = "e", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_e" }
+abc229-f = { alias = "f", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_f" }
+abc229-g = { alias = "g", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_g" }
+abc229-h = { alias = "h", problem = "https://atcoder.jp/contests/abc229/tasks/abc229_h" }
+
+[[bin]]
+name = "abc229-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc229-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc229-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc229-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc229-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc229-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc229-g"
+path = "src/bin/g.rs"
+
+[[bin]]
+name = "abc229-h"
+path = "src/bin/h.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
