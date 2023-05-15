@@ -1,0 +1,41 @@
+[package]
+name = "abc179"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc179-a = { alias = "a", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_a" }
+abc179-b = { alias = "b", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_b" }
+abc179-c = { alias = "c", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_c" }
+abc179-d = { alias = "d", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_d" }
+abc179-e = { alias = "e", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_e" }
+abc179-f = { alias = "f", problem = "https://atcoder.jp/contests/abc179/tasks/abc179_f" }
+
+[[bin]]
+name = "abc179-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc179-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc179-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc179-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc179-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc179-f"
+path = "src/bin/f.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
