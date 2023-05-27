@@ -1,0 +1,41 @@
+[package]
+name = "abc211"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc211-a = { alias = "a", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_a" }
+abc211-b = { alias = "b", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_b" }
+abc211-c = { alias = "c", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_c" }
+abc211-d = { alias = "d", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_d" }
+abc211-e = { alias = "e", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_e" }
+abc211-f = { alias = "f", problem = "https://atcoder.jp/contests/abc211/tasks/abc211_f" }
+
+[[bin]]
+name = "abc211-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc211-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc211-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc211-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc211-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc211-f"
+path = "src/bin/f.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
