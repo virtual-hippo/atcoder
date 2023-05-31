@@ -7,11 +7,18 @@ use proconio::input;
 
 fn main() {
     input! {
-        n: usize,
-        // (h,w): (usize, usize),
-        // s: Chars,
-        // a: [usize; h],
+        (h,w): (usize, usize),
+        a: [[u8; w]; h],
     }
-    println!("Yes");
+    for i in 0..h{
+        for j in 0..w{
+            if a[i][j] == 0 {
+                print!(".");
+            } else {
+                print!("{}", (64_u8 + a[i][j]) as char);
+            }
+        }
+        println!("");
+    }
 }
 
