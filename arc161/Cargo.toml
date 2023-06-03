@@ -1,0 +1,41 @@
+[package]
+name = "arc161"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+arc161-a = { alias = "a", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_a" }
+arc161-b = { alias = "b", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_b" }
+arc161-c = { alias = "c", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_c" }
+arc161-d = { alias = "d", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_d" }
+arc161-e = { alias = "e", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_e" }
+arc161-f = { alias = "f", problem = "https://atcoder.jp/contests/arc161/tasks/arc161_f" }
+
+[[bin]]
+name = "arc161-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "arc161-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "arc161-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "arc161-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "arc161-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "arc161-f"
+path = "src/bin/f.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
