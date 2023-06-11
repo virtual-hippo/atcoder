@@ -20,6 +20,13 @@ let num: i32 = c as i32 - 48;
 ```
 
 ## 文字列出力系
+### 大文字変換
+```rust
+let mut s = String::from("Grüße, Jürgen ❤");
+s.make_ascii_uppercase();
+assert_eq!("GRüßE, JüRGEN ❤", s);
+```
+
 ### 小数点
 ```rust
  // 少数第7まで表示
