@@ -1,6 +1,10 @@
 struct UnionFind {
+    /// 親頂点の番号
     par: Vec<usize>,
+    /// 連結成分の頂点の個数
     siz: Vec<usize>,
+    /// 連結成分の辺の個数
+    sid: Vec<usize>,
 }
 
 impl UnionFind {
@@ -8,6 +12,7 @@ impl UnionFind {
         UnionFind {
             par: vec![0; n+1],
             siz: vec![1; n+1],
+            sid: vec![0; n+1],
         }
     }
 
@@ -26,18 +31,23 @@ impl UnionFind {
         let root_u = self.root(u);
         let root_v = self.root(v);
         if root_u == root_v {
+            self.sid[root_u] += 1;
             return;
         }
         if self.siz[root_u] < self.siz[root_v] {
             self.par[root_u] = root_v;
             self.siz[root_v] += self.siz[root_u];
+            self.sid[root_v] += 1;
+            self.sid[root_v] += self.sid[root_u];
         } else {
             self.par[root_v] = root_u;
             self.siz[root_u] += self.siz[root_v];
+            self.sid[root_u] += 1;
+            self.sid[root_u] += self.sid[root_v];
         }
     }
 
-    fn same(&self, u: usize, v: usize) -> bool {
+    fn _same(&self, u: usize, v: usize) -> bool {
         self.root(u) == self.root(v)
     }
 }
