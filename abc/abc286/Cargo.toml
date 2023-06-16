@@ -1,0 +1,51 @@
+[package]
+name = "abc286"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc286-a = { alias = "a", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_a" }
+abc286-b = { alias = "b", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_b" }
+abc286-c = { alias = "c", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_c" }
+abc286-d = { alias = "d", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_d" }
+abc286-e = { alias = "e", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_e" }
+abc286-ex = { alias = "ex", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_h" }
+abc286-f = { alias = "f", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_f" }
+abc286-g = { alias = "g", problem = "https://atcoder.jp/contests/abc286/tasks/abc286_g" }
+
+[[bin]]
+name = "abc286-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc286-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc286-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc286-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc286-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc286-ex"
+path = "src/bin/ex.rs"
+
+[[bin]]
+name = "abc286-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc286-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
