@@ -123,11 +123,17 @@ for i in 1..n+1 {
 ```
 
 ## 座標系
-### 距離の2乗計算
+### 距離の2乗計算(2次元)
 ```rust
 fn calc_d(pos1: (i64, i64), pos2: (i64, i64)) -> i64 {
     (pos2.0 - pos1.0).pow(2) + (pos2.1 - pos1.1).pow(2) 
 }
 ```
 
+### 距離の2乗計算(N次元)
+```rust
+fn calc_d(pos1: &Vec<i64>, pos2: &Vec<i64>) -> i64 {
+    (0..pos1.len()).fold(0, |sum, x| sum + (pos2[x]-pos1[x]).pow(2))
+}
+```
 
