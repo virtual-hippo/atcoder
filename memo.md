@@ -137,3 +137,16 @@ fn calc_d(pos1: &Vec<i64>, pos2: &Vec<i64>) -> i64 {
 }
 ```
 
+## 探索系
+### bit全探索
+```rust
+for bit in 0..(1<<n) {
+    for i in 0..n {
+        if bit & (1 << i) == 0 {
+            //
+        } else {
+            //
+        }
+    }
+}
+```
