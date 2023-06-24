@@ -1,0 +1,51 @@
+[package]
+name = "abc289"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc289-a = { alias = "a", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_a" }
+abc289-b = { alias = "b", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_b" }
+abc289-c = { alias = "c", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_c" }
+abc289-d = { alias = "d", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_d" }
+abc289-e = { alias = "e", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_e" }
+abc289-ex = { alias = "ex", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_h" }
+abc289-f = { alias = "f", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_f" }
+abc289-g = { alias = "g", problem = "https://atcoder.jp/contests/abc289/tasks/abc289_g" }
+
+[[bin]]
+name = "abc289-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc289-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc289-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc289-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc289-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc289-ex"
+path = "src/bin/ex.rs"
+
+[[bin]]
+name = "abc289-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc289-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
