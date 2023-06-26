@@ -19,7 +19,7 @@ let c: char = '5';
 let num: i32 = c as i32 - 48;
 ```
 
-## 文字列出力系
+## 文字列操作系
 ### 大文字変換
 ```rust
 let mut s = String::from("Grüße, Jürgen ❤");
@@ -62,6 +62,19 @@ let small_a = 97_u8;
 (0..26).for_each(|i| print!("{}", (small_a + i) as char));
 ```
 
+### 回文チェック
+```rust
+fn is_kaibun(s: &Vec<char>) -> bool{
+    let s_len = s.len();
+    for i in 0..s_len/2 {
+        if s[i] != s[s_len-1-i] {
+            return false;
+        }
+    }
+    true
+}
+```
+
 ## HashMap
 ### entry API
 ```rust
@@ -99,6 +112,12 @@ let sum = v.iter().sum::<usize>();
 
 // fold()を使う場合
 let sum = v.iter().fold(0, |sum, x| sum + *x);
+```
+
+### 一部を新しく作る
+```rust
+let s = vec!['a', 'b', 'c', 'd', 'e']; 
+let new_s = s[0..(s.len()-1)/2].iter().map(|&ch| ch).collect();
 ```
 
 ## DP
