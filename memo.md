@@ -50,6 +50,14 @@ for i in 1..n+1 {
 }
 ```
 
+### str to num
+```rust
+let str_num = "111";
+
+// 7
+println!("{}", u64::from_str_radix(str_num, 2).unwrap());
+```
+
 ### アルファベットを順に出力
 ```rust
 // https://www.k-cube.co.jp/wakaba/server/ascii_code.html
