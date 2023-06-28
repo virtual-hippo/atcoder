@@ -177,3 +177,50 @@ for bit in 0..(1<<n) {
     }
 }
 ```
+## 数学
+### 最大公約数
+```rust
+fn gcd(x: usize, y: usize) -> usize {
+    let mut xy = (x, y);
+    while xy.0 >= 1 && xy.1 >= 1 {
+        if xy.0 < xy.1 {
+            xy.1 %= xy.0;
+        } else {
+            xy.0 %= xy.1;
+        }
+    }
+    if xy.0 >= 1 {
+        xy.0
+    } else {
+        xy.1
+    }
+}
+```
+
+### 最小公倍数
+```rust
+fn lcm(x: usize, y: usize) -> usize {
+    let d = gcd(x,y);
+    x / d * y
+}
+```
+
+## うまく分類できないの
+### 区間スケジュール問題
+```rust
+// https://atcoder.jp/contests/abc131/tasks/abc131_d
+input! {
+    n: usize,
+    mut ab: [(usize, usize); n],
+}
+ab.sort_by(|(_,a), (_,b)| a.cmp(b));
+let mut current_time = 0;
+for (a, b) in ab.iter() {
+    current_time += *a;
+    if current_time > *b {
+        println!("No");
+        return;
+    }
+}
+println!("Yes");
+```
