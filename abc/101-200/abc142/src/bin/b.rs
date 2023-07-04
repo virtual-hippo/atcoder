@@ -7,10 +7,10 @@ use proconio::input;
 
 fn main() {
     input! {
-        (n,k): (usize, usize),
+        n: usize,
+        k: usize,
         h: [usize; n],
     }
-    let ans = (0..n).fold(0, |sum, x| if h[x] >= k {sum+1} else {sum});
-    println!("{}", ans);
+    println!("{}", h.iter().filter(|&&x| x >= k).count());
 }
 

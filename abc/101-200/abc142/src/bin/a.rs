@@ -9,7 +9,7 @@ fn main() {
     input! {
         n: usize,
     }
-    let cnt = (1..n+1).fold(0, |sum, x| if x % 2 == 1 {sum+1} else {sum});
-    println!("{}", (cnt as f64) / (n as f64));
+    let even = (0..n).filter(|&x| (x +1) %2 == 1).count();
+    println!("{}", even as f64 / n as f64);
 }
 

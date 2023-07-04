@@ -8,17 +8,12 @@ use proconio::input;
 fn main() {
     input! {
         n: usize,
+        a: [usize; n],
     }
-    let mut table = vec![0; n];
-    for i in 0..n{
-        input! {
-            a: usize,
-        }
-        table[a-1] = i+1;
+    let mut with_index: Vec<(usize,usize)> = a.iter().enumerate().map(|(i,&x)|(i,x)).collect();
+    with_index.sort_by(|(_,a), (_,b)| a.cmp(b));
+    for i in 0..n {
+        print!("{} ", with_index[i].0 + 1);
     }
-    for i in 0..n-1{
-        print!("{} ", table[i]);
-    }
-    print!("{}", table[n-1]);
 }
 
