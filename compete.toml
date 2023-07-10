@@ -36,6 +36,7 @@ fn main() {
         // s: Chars,
         // a: [usize; h],
     }
+    let ans = 0;
     println!("{}", ans);
 }
 
