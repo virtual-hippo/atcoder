@@ -1,26 +1,22 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
 use proconio::input;
-use std::collections::HashMap;
 use proconio::marker::Chars;
+use std::collections::HashMap;
 
 fn main() {
     input! {
         n: usize,
     }
-    let mut map = HashMap::new();
+    let mut map = HashMap::with_capacity(n);
     for _ in 0..n {
         input! {
             mut s: Chars,
         }
         s.sort();
-        let string = s.iter().collect::<String>();
-        *map.entry(string).or_insert(0_u64) += 1;
+        *map.entry(s).or_insert(0) += 1;
     }
-    let ans = map.iter().fold(0, |sum, (_, val)| sum + (1..*val).fold(0, |sum2, x| sum2+x));
+    let ans: u64 = map
+        .iter()
+        .filter(|&(_, &v)| v > 1)
+        .fold(0, |sum, (_, &v)| sum + (v * (v - 1)) / 2);
     println!("{}", ans);
 }
-
