@@ -1,18 +1,11 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
 use proconio::input;
 
 fn main() {
     input! {
-        n: usize,
-        // (h,w): (usize, usize),
-        // s: Chars,
-        // a: [usize; h],
+        a: i64,
+        b: i64,
+        n: i64,
     }
-    let ans = 0;
-    println!("{}", ans);
+    let x = n.min(b-1);
+    println!("{}", (a * x) / b - a * (x / b));
 }
-
