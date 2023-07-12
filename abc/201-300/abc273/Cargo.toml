@@ -1,0 +1,51 @@
+[package]
+name = "abc273"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc273-a = { alias = "a", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_a" }
+abc273-b = { alias = "b", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_b" }
+abc273-c = { alias = "c", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_c" }
+abc273-d = { alias = "d", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_d" }
+abc273-e = { alias = "e", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_e" }
+abc273-ex = { alias = "ex", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_h" }
+abc273-f = { alias = "f", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_f" }
+abc273-g = { alias = "g", problem = "https://atcoder.jp/contests/abc273/tasks/abc273_g" }
+
+[[bin]]
+name = "abc273-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc273-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc273-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc273-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc273-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc273-ex"
+path = "src/bin/ex.rs"
+
+[[bin]]
+name = "abc273-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc273-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
