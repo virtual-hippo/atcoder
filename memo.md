@@ -83,6 +83,12 @@ fn is_kaibun(s: &Vec<char>) -> bool{
 }
 ```
 
+### 大文字と小文字
+```rust
+let large_chars = vec!['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+let small_chars = vec!['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
+```
+
 ## HashMap
 ### entry API
 ```rust
@@ -223,4 +229,20 @@ for (a, b) in ab.iter() {
     }
 }
 println!("Yes");
+```
+
+### インタラクティブな問題のおなじない
+```rust
+use proconio::input;
+use proconio::source::line::LineSource;
+use std::io::{self, BufReader};
+
+fn main() {
+    let mut stdin = LineSource::new(BufReader::new(io::stdin()));
+    macro_rules! input(($($tt:tt)*) => (proconio::input!(from &mut stdin, $($tt)*)));
+
+    input! {
+        n: usize,
+    }
+}
 ```
