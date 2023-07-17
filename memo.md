@@ -54,8 +54,18 @@ for i in 1..n+1 {
 ```rust
 let str_num = "111";
 
-// 7
+// 2進数
 println!("{}", u64::from_str_radix(str_num, 2).unwrap());
+```
+```rust
+let stri: String = String::from("5");
+let num: i32 = stri.parse().unwrap();
+```
+
+### num to string
+```rust
+let num: i32 = 5;
+let stri: String = num.to_string();
 ```
 
 ### アルファベットを順に出力
