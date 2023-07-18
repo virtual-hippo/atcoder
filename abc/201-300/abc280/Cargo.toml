@@ -1,0 +1,51 @@
+[package]
+name = "abc280"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc280-a = { alias = "a", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_a" }
+abc280-b = { alias = "b", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_b" }
+abc280-c = { alias = "c", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_c" }
+abc280-d = { alias = "d", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_d" }
+abc280-e = { alias = "e", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_e" }
+abc280-ex = { alias = "ex", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_h" }
+abc280-f = { alias = "f", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_f" }
+abc280-g = { alias = "g", problem = "https://atcoder.jp/contests/abc280/tasks/abc280_g" }
+
+[[bin]]
+name = "abc280-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc280-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc280-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc280-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc280-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc280-ex"
+path = "src/bin/ex.rs"
+
+[[bin]]
+name = "abc280-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc280-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
