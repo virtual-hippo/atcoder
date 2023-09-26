@@ -7,51 +7,22 @@ fn main() {
         (h,w): (usize, usize),
         g: [Chars; h],
     }
-    let mut set = HashSet::new();
-    let mut curr = (1,1);
-    set.insert(curr);
-    loop {
-        match g[curr.0-1][curr.1-1] {
-            'U' => {
-                if curr.0 != 1 {
-                    curr.0 -= 1;
-                } else {
-                    println!("{} {}", curr.0, curr.1);
-                    return;
-                }
-            }
-            'D' => {
-                if curr.0 != h {
-                    curr.0 += 1;
-                } else {
-                    println!("{} {}", curr.0, curr.1);
-                    return;
-                }
-            }
-            'L' => {
-                if curr.1 != 1 {
-                    curr.1 -= 1;
-                } else {
-                    println!("{} {}", curr.0, curr.1);
-                    return;
-                }
-            }
-            'R' => {
-                if curr.1 != w {
-                    curr.1 += 1;
-                } else {
-                    println!("{} {}", curr.0, curr.1);
-                    return;
-                }
-            }
-            _ => unreachable!()
-        }
-        if set.contains(&curr) {
-            println!("-1");
-            return;
+    let mut seen = HashSet::new();
+    let mut pos = (0, 0);
+    while seen.contains(&pos) == false {
+        seen.insert(pos);
+        if g[pos.0][pos.1] == 'U' && pos.0 != 0 {
+            pos.0 -= 1;
+        } else if g[pos.0][pos.1] == 'D' && pos.0 != h - 1 {
+            pos.0 += 1;
+        } else if g[pos.0][pos.1] == 'L' && pos.1 != 0 {
+            pos.1 -= 1;
+        } else if g[pos.0][pos.1] == 'R' && pos.1 != w - 1 {
+            pos.1 += 1;
         } else {
-            set.insert(curr);
+            println!("{} {}", pos.0 + 1, pos.1 + 1);
+            return;
         }
     }
+    println!("{}", -1);
 }
-

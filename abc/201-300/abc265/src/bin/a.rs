@@ -1,3 +1,8 @@
+// use std::collections::HashSet;
+// use std::collections::HashMap;
+// use std::collections::VecDeque;
+// use std::collections::BinaryHeap;
+// use proconio::marker::Chars;
 use proconio::input;
 
 fn main() {
@@ -6,10 +11,9 @@ fn main() {
         y: usize,
         n: usize,
     }
-    if y < x * 3 {
-        println!("{}",(n/3) * y + n%3 * x);
-    } else {
+    if 3 * x <= y {
         println!("{}", x * n);
+    } else {
+        println!("{}", (x * (n % 3)) + (y * (n / 3)));
     }
 }
-

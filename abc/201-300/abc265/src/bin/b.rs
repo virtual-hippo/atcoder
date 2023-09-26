@@ -1,4 +1,10 @@
+// use std::collections::HashSet;
+// use std::collections::HashMap;
+// use std::collections::VecDeque;
+// use std::collections::BinaryHeap;
+// use proconio::marker::Chars;
 use proconio::input;
+use std::collections::HashMap;
 
 fn main() {
     input! {
@@ -6,26 +12,25 @@ fn main() {
         m: usize,
         t: usize,
         a: [usize; n-1],
-        xy: [(usize, usize); m],
     }
-    let mut current = (1, t);
-    let mut cur = 0;
-    for i in 0..n-1 {
-        if cur < xy.len() {
-            if current.0 == xy[cur].0 {
-                current.1 += xy[cur].1;
-            }
+    let mut bonus = HashMap::with_capacity(m);
+    for _ in 0..m {
+        input! {
+            x: usize,
+            y: usize,
         }
-        if current.1 <= a[i] {
-            println!("No");
+        bonus.insert(x, y);
+    }
+    let mut current = t;
+    for i in 0..n - 1 {
+        if let Some(y) = bonus.get(&(i + 1)) {
+            current += y;
+        }
+        if current <= a[i] {
+            println!("{}", "No");
             return;
         }
-        current.1 -= a[i];
-        current.0 += 1;
-        if cur + 1 < m && current.0 > xy[cur].0 {
-            cur += 1;
-        }
+        current -= a[i];
     }
-    println!("Yes");
+    println!("{}", "Yes");
 }
-
