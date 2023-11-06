@@ -1,3 +1,18 @@
+// 二部グラフか判定する
+fn is_binary(graph: &Vec<Vec<usize>>, colors: &mut Vec<i8>, pos: usize, color: i8) -> bool {
+    colors[pos] = color;
+    for &point in graph[pos].iter() {
+        if colors[point] == -1 {
+            if !is_binary(graph, colors, point, 1 - color) {
+                return false;
+            }
+        } else if colors[point] == color {
+            return false;
+        }
+    }
+    true
+}
+
 fn dfs(visited: &mut Vec<bool>, graph: &Vec<Vec<usize>>, pos: usize) {
     visited[pos] = true;
     for point in graph[pos].iter() {
@@ -7,15 +22,15 @@ fn dfs(visited: &mut Vec<bool>, graph: &Vec<Vec<usize>>, pos: usize) {
     }
 }
 /// 単純無向グラフの連結成分を数える
-/// 
+///
 /// * `n` - 頂点の数
 /// * `m` - 辺の数
 fn count_connected(n: usize, m: usize) -> usize {
     let mut graph = vec![vec![]; n];
     for _ in 0..m {
-        let (u,v):  (usize, usize);
-        graph[u-1].push(v-1);
-        graph[v-1].push(u-1);
+        let (u, v): (usize, usize);
+        graph[u - 1].push(v - 1);
+        graph[v - 1].push(u - 1);
     }
     let mut count_connected = 0;
     let mut visited = vec![false; n];
