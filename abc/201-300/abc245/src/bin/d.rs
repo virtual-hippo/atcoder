@@ -1,17 +1,21 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
-        // (h,w): (usize, usize),
-        // s: Chars,
-        // a: [usize; h],
+        m: usize,
+        a: [i64; n+1],
+        mut c: [i64; n+m+1],
     }
-    println!("Yes");
+    let mut b = vec![0; m + 1];
+    for i in (0..m + 1).rev() {
+        b[i] = c[i + n] / a[n];
+        for j in 0..n + 1 {
+            c[i + j] -= b[i] * a[j];
+        }
+    }
+    for i in 0..m + 1 {
+        print!("{} ", b[i]);
+    }
 }
-
