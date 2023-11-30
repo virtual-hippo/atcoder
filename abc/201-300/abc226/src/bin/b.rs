@@ -1,17 +1,18 @@
-use proconio::input;
+use proconio::{fastout, input};
 use std::collections::HashSet;
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
     }
-    let mut aa = HashSet::with_capacity(n);
+    let mut set = HashSet::with_capacity(n);
     for _ in 0..n {
         input! {
             l: usize,
             a: [usize; l],
         }
-        aa.insert(a);
+        set.insert(a);
     }
-    println!("{}", aa.len());
+    println!("{}", set.len());
 }
