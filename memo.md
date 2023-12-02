@@ -202,8 +202,27 @@ for bit in 0..(1<<n) {
     }
 }
 ```
+
+### 二分探索
+```rust
+// https://qiita.com/hossie/items/e170eb80f48cdb4f6b51
+use superslice::Ext;
+
+let a = [1, 3, 3, 5]; // 昇順に並べておく
+assert_eq!(a.lower_bound(&2), 1); // 値が2以上の最初の位置。
+assert_eq!(a.lower_bound(&3), 1); // 値が3以上の最初の位置。binary_search と違い、場所が一意に決まる
+assert_eq!(a.lower_bound(&4), 3); // 値が4以上の最初の位置。
+assert_eq!(a.upper_bound(&4), 3); // 値が4より上の最後の位置。
+assert_eq!(a.upper_bound(&5), 4); // 値が5より上の最後の位置。4要素なら 4が現れうる
+
+```
+
 ## 数学
 ### 最大公約数
+```rust
+use num_integer::gcd;
+```
+
 ```rust
 fn gcd(x: usize, y: usize) -> usize {
     let mut xy = (x, y);
