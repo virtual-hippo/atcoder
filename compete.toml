@@ -22,11 +22,6 @@ test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
 
 [template]
 src = '''
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
 use proconio::{fastout, input};
 
 #[fastout]
