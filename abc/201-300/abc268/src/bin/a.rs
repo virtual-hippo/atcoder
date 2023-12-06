@@ -1,19 +1,14 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 use std::collections::HashSet;
 
+#[fastout]
 fn main() {
     input! {
-        n: [usize; 5],
+        a: [usize; 5],
     }
     let mut set = HashSet::new();
     for i in 0..5 {
-        set.insert(n[i]);
+        set.insert(a[i]);
     }
     println!("{}", set.len());
 }
-

@@ -1,26 +1,14 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
-use proconio::marker::Chars;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
-        s: Chars,
-        t: Chars,
+        s: String,
+        t: String,
     }
-    if s.len() > t.len() {
+    if t.starts_with(&s) {
+        println!("Yes");
+    } else {
         println!("No");
-        return;
     }
-    for i in 0..s.len() {
-        if s[i] != t[i] {
-            println!("No");
-            return;
-        }
-    }
-    println!("Yes");
 }
-
