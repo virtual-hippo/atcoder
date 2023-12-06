@@ -194,7 +194,7 @@ fn is_triangle(p1: (i64, i64), p2: (i64, i64), p3: (i64, i64)) -> bool {
 ```rust
 for bit in 0..(1<<n) {
     for i in 0..n {
-        if bit & (1 << i) == 0 {
+        if bit & (1 << i) != 0 {
             //
         } else {
             //
