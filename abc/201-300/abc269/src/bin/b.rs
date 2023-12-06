@@ -1,41 +1,38 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
 use proconio::marker::Chars;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
         s: [Chars; 10],
     }
-
+    let (mut a, mut b, mut c, mut d) = (usize::MAX, usize::MAX, usize::MAX, usize::MAX);
     for i in 0..10 {
         for j in 0..10 {
-            if s[i][j] == '#' {
-                let a = i;
-                let b = j;
-                let c = {
-                    let mut current = a;
-                    while current + 1 < 10 && s[current + 1][b] == '#' {
-                        current += 1;
+            if a == usize::MAX && s[i][j] == '#' {
+                a = i + 1;
+                c = j + 1;
+                for ii in i..9 {
+                    if s[ii + 1][j] == '.' {
+                        b = ii + 1;
+                        break;
                     }
-                    current
-                };
-                let d = {
-                    let mut current = b;
-                    while current + 1 < 10 && s[a][current + 1] == '#' {
-                        current += 1;
+                }
+                if b == usize::MAX {
+                    b = 10;
+                }
+                for jj in j..9 {
+                    if s[i][jj + 1] == '.' {
+                        d = jj + 1;
+                        break;
                     }
-                    current
-                };
-                
-                println!("{} {}", a + 1, c + 1);
-                println!("{} {}", b + 1, d + 1);
-                return;
+                }
+                if d == usize::MAX {
+                    d = 10;
+                }
             }
         }
     }
+    println!("{} {}", a, b);
+    println!("{} {}", c, d);
 }
-
