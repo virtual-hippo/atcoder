@@ -37,5 +37,6 @@ path = "src/bin/f.rs"
 
 [dependencies]
 proconio = { version = "=0.3.6", features = ["derive"] }
+superslice = "1.0.0"
 
 [dev-dependencies]

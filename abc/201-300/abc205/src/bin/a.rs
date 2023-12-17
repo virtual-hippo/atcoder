@@ -1,15 +1,10 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
-        a: usize,
-        b: usize,
+        a: f64,
+        b: f64,
     }
-    println!("{}", (a*b) as f64 / 100.0);
+    println!("{}", a * (b / 100.0));
 }
-

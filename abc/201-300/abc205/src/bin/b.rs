@@ -1,27 +1,19 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 use std::collections::HashSet;
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
+        a: [usize; n],
     }
-    let mut set = HashSet::new();
-    for _ in 0..n {
-        input! {
-            a: usize,
-        }
-        set.insert(a);
+    let mut set = (1..=n).collect::<HashSet<usize>>();
+    for i in 0..n {
+        set.remove(&a[i]);
     }
-    if set.len() == n {
-        println!("Yes");//
+    if set.len() == 0 {
+        println!("Yes");
     } else {
         println!("No");
     }
-    
 }
-

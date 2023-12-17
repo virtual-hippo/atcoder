@@ -1,55 +1,42 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
         a: i64,
         b: i64,
-        c: usize,
+        c: u32,
     }
-    if c %2 == 0 {
-        let a = std::cmp::max(a, -a);
-        let b = std::cmp::max(b, -b);
-        if a < b {
+
+    if c % 2 == 1 {
+        if a < 0 && b < 0 {
+            if a < b {
+                println!("<");
+            } else if a > b {
+                println!(">");
+            } else {
+                println!("=");
+            }
+        } else if a < 0 {
             println!("<");
-        } else if a > b {
+        } else if b < 0 {
+            println!(">");
+        } else {
+            if a < b {
+                println!("<");
+            } else if a > b {
+                println!(">");
+            } else {
+                println!("=");
+            }
+        }
+    } else {
+        if a.max(-a) < b.max(-b) {
+            println!("<");
+        } else if a.max(-a) > b.max(-b) {
             println!(">");
         } else {
             println!("=");
         }
-    } else {
-        if 0 <= a {
-            if 0 <= b {
-                if a < b {
-                    println!("<");
-                } else if a > b {
-                    println!(">");
-                } else {
-                    println!("=");
-                }
-            } else {
-                println!(">");
-            }
-            return;
-        }
-        if a < 0 {
-            if 0 <= b {
-                println!("<");
-            } else {
-                if a < b {
-                    println!("<");
-                } else if a > b {
-                    println!(">");
-                } else {
-                    println!("=");
-                }
-            } 
-            return;
-        }
     }
 }
-
