@@ -1,0 +1,36 @@
+[package]
+name = "adt_medium_20231228_1"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+adt_medium_20231228_1-c = { alias = "c", problem = "https://atcoder.jp/contests/adt_medium_20231228_1/tasks/abc236_b" }
+adt_medium_20231228_1-d = { alias = "d", problem = "https://atcoder.jp/contests/adt_medium_20231228_1/tasks/abc282_b" }
+adt_medium_20231228_1-e = { alias = "e", problem = "https://atcoder.jp/contests/adt_medium_20231228_1/tasks/abc220_c" }
+adt_medium_20231228_1-f = { alias = "f", problem = "https://atcoder.jp/contests/adt_medium_20231228_1/tasks/abc304_c" }
+adt_medium_20231228_1-g = { alias = "g", problem = "https://atcoder.jp/contests/adt_medium_20231228_1/tasks/abc300_d" }
+
+[[bin]]
+name = "adt_medium_20231228_1-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "adt_medium_20231228_1-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "adt_medium_20231228_1-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "adt_medium_20231228_1-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "adt_medium_20231228_1-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
