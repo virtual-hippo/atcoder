@@ -1,28 +1,31 @@
-use proconio::input;
 use proconio::marker::Chars;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
-        mut s: Chars,
+        s: Chars,
         t: Chars,
     }
+    let mut is_swapped = (false, false);
     for i in 0..s.len() {
-        let mut current = s.clone();
-        if 0 < i {
-            current[i] = s[i-1];
-            current[i-1] = s[i];
+        if s[i] == t[i] {
+            continue;
         }
-        let mut ret = true;
-        for j in 0..s.len() {
-            if current[j] != t[j] {
-                ret = false;
-            }
+        if is_swapped.0 && is_swapped.1 {
+            println!("No");
+            return;
         }
-        if ret {
-            println!("Yes");
+        if i < s.len() - 1 && s[i] == t[i + 1] && s[i + 1] == t[i] {
+            is_swapped.0 = true;
+            continue;
+        } else if 0 < i && s[i] == t[i - 1] && s[i - 1] == t[i] {
+            is_swapped.1 = true;
+            continue;
+        } else {
+            println!("No");
             return;
         }
     }
-    println!("No");
+    println!("Yes");
 }
-

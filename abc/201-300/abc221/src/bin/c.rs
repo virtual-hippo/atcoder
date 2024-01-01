@@ -1,25 +1,40 @@
 use itertools::Itertools;
-use proconio::input;
 use proconio::marker::Chars;
+use proconio::{fastout, input};
 
-fn as_num(vals: &[&u64]) -> u64 {
-    vals.iter()
-        .enumerate()
-        .fold(0, |sum, (i, &&x)| sum + x * 10_u64.pow(i as u32))
-}
-
+#[fastout]
 fn main() {
     input! {
         n: Chars,
     }
-    let vec = n.iter().map(|&x| (x as u64) - 48).collect::<Vec<u64>>();
-    let mut ans = 0;
-    for perm in vec.iter().permutations(n.len()) {
-        for i in 1..n.len() {
-            let x = as_num(&perm[0..i]);
-            let y = as_num(&perm[i..n.len()]);
-            ans = std::cmp::max(ans, x * y);
-        }
-    }
+    let ans = (1..n.len() / 2 + 1)
+        .flat_map(|i| {
+            (0..n.len()).combinations(i).map(|vec| {
+                let mut left = vec![];
+                let mut right = vec![];
+                for j in 0..n.len() {
+                    if vec.contains(&j) {
+                        left.push(n[j]);
+                    } else {
+                        right.push(n[j]);
+                    }
+                }
+                left.sort_by(|a, b| b.cmp(a));
+                right.sort_by(|a, b| b.cmp(a));
+                let left = if let Ok(v) = left.iter().collect::<String>().parse::<u64>() {
+                    v
+                } else {
+                    0
+                };
+                let right = if let Ok(v) = right.iter().collect::<String>().parse::<u64>() {
+                    v
+                } else {
+                    0
+                };
+                left * right
+            })
+        })
+        .max()
+        .unwrap();
     println!("{}", ans);
 }

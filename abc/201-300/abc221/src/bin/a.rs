@@ -1,16 +1,11 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
-        a: usize,
-        b: usize,
+        a: u32,
+        b: u32,
     }
-    let diff = a - b;
-    println!("{}", 32_u32.pow(diff as u32));
+    let ans = 32_u64.pow(a - b);
+    println!("{}", ans);
 }
-
