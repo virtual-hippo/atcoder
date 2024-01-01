@@ -249,6 +249,39 @@ fn lcm(x: usize, y: usize) -> usize {
 }
 ```
 
+### 期待値を mod 998244353 で出力
+```rust
+    // https://strangerxxx.hateblo.jp/entry/20230419/1681873929
+    // 期待値 = p / q
+    let denominator = modular_inv(q, MOD);
+    (p * denominator) % MOD
+
+```
+
+### モジュラ逆数
+```rust
+// モジュラ逆数を求める
+fn modular_inv(a: usize, m: usize) -> usize {
+    power(a, m - 2, m)
+}
+
+// aのb乗をmで割った余りを返す関数
+fn power(a: usize, b: usize, m: usize) -> usize {
+    let mut p = a;
+    let mut ret = 1;
+    for i in 0..30 {
+        let wari = 1 << i;
+        if (b / wari) % 2 == 1 {
+            ret = (ret * p) % m;
+        }
+        p = (p * p) % m;
+    }
+    ret
+}
+```
+
+
+
 ## うまく分類できないの
 ### 区間スケジュール問題
 ```rust
