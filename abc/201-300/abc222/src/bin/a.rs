@@ -1,14 +1,9 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+use proconio::{fastout, input};
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
     }
-    println!("{:>04}", n);
+    println!("{:0>4}", n);
 }
-

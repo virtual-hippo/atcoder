@@ -1,59 +1,51 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
 use proconio::marker::Chars;
+use proconio::{fastout, input};
 
-fn janken(a: char, b: char) -> u8 {
-    if a == b {
-        0
-    } else if a == 'G'{
-        if b == 'C' {
-            1
-        } else {
-            2
-        }
-    } else if a == 'C'{
-        if b == 'P' {
-            1
-        } else {
-            2
-        }
-    } else {
-        if b == 'G' {
-            1
-        } else {
-            2
-        }
+pub const KACHI: usize = 0;
+pub const MAKE: usize = 1;
+pub const AIKO: usize = 2;
+
+fn janken(jibun: char, aite: char) -> usize {
+    if jibun == aite {
+        return AIKO;
     }
+    if jibun == 'G' && aite == 'C' {
+        return KACHI;
+    }
+    if jibun == 'C' && aite == 'P' {
+        return KACHI;
+    }
+    if jibun == 'P' && aite == 'G' {
+        return KACHI;
+    }
+    MAKE
 }
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
         m: usize,
-        a: [Chars; 2 * n],
+        a: [Chars; 2*n],
     }
-    let mut cnt = (0..2*n).map(|x| (x, 0)).collect::<Vec<(usize, usize)>>();
-    let mut current = (0..2*n).collect::<Vec<usize>>();
-    for j in 0..m {
-        for i in 0..n {
-            let (left, right) = (current[i*2], current[i*2 + 1]); 
-            let ret = janken(a[left][j], a[right][j]);
-            if ret == 1 {
-                cnt[left].1 += 1;
-            } else if ret == 2 {
-                cnt[right].1 += 1;
+    let mut rank = (0..2 * n).collect::<Vec<usize>>();
+    let mut shosu = vec![0; 2 * n];
+    for i in 0..m {
+        for j in 0..n {
+            let left = rank[j * 2];
+            let right = rank[j * 2 + 1];
+            if janken(a[left][i], a[right][i]) == KACHI {
+                shosu[left] += 1;
+            } else if janken(a[left][i], a[right][i]) == MAKE {
+                shosu[right] += 1;
             }
         }
-        let mut clone = cnt.clone();
-        clone.sort_by(|a, b| b.1.cmp(&a.1));
-        current = clone.iter().map(|(i, _)| *i).collect();
+        rank.sort_by(|a, b| match shosu[*b].cmp(&shosu[*a]) {
+            std::cmp::Ordering::Equal => a.cmp(&b),
+            other => other,
+        });
     }
-    for i in current {
-        println!("{}", i+1);
+    for i in 0..2 * n {
+        println!("{}", rank[i] + 1);
     }
 }
-
