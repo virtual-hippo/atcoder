@@ -1,0 +1,46 @@
+[package]
+name = "abc342"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc342-a = { alias = "a", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_a" }
+abc342-b = { alias = "b", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_b" }
+abc342-c = { alias = "c", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_c" }
+abc342-d = { alias = "d", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_d" }
+abc342-e = { alias = "e", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_e" }
+abc342-f = { alias = "f", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_f" }
+abc342-g = { alias = "g", problem = "https://atcoder.jp/contests/abc342/tasks/abc342_g" }
+
+[[bin]]
+name = "abc342-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc342-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc342-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc342-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc342-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc342-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc342-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
