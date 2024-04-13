@@ -1,0 +1,46 @@
+[package]
+name = "abc341"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc341-a = { alias = "a", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_a" }
+abc341-b = { alias = "b", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_b" }
+abc341-c = { alias = "c", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_c" }
+abc341-d = { alias = "d", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_d" }
+abc341-e = { alias = "e", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_e" }
+abc341-f = { alias = "f", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_f" }
+abc341-g = { alias = "g", problem = "https://atcoder.jp/contests/abc341/tasks/abc341_g" }
+
+[[bin]]
+name = "abc341-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc341-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc341-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc341-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc341-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc341-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc341-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.3.6", features = ["derive"] }
+
+[dev-dependencies]
