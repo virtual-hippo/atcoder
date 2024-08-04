@@ -1,0 +1,48 @@
+[package]
+name = "abc365"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc365-a = { alias = "a", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_a" }
+abc365-b = { alias = "b", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_b" }
+abc365-c = { alias = "c", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_c" }
+abc365-d = { alias = "d", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_d" }
+abc365-e = { alias = "e", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_e" }
+abc365-f = { alias = "f", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_f" }
+abc365-g = { alias = "g", problem = "https://atcoder.jp/contests/abc365/tasks/abc365_g" }
+
+[[bin]]
+name = "abc365-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc365-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc365-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc365-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc365-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc365-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc365-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+
+[dev-dependencies]
