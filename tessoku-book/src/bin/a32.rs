@@ -1,17 +1,24 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
 use proconio::input;
 
 fn main() {
     input! {
         n: usize,
-        // (h,w): (usize, usize),
-        // s: Chars,
-        // a: [usize; h],
+        a: usize,
+        b: usize,
     }
-    println!("Yes");
+    let mut dp = vec![false; n + a + b];
+    for i in 0..=n {
+        if i >= a && dp[i - a] == false {
+            dp[i] = true;
+        } else if i >= b && dp[i - b] == false {
+            dp[i] = true;
+        } else {
+            dp[i] = false;
+        }
+    }
+    if dp[n] {
+        println!("First");
+    } else {
+        println!("Second");
+    }
 }
-
