@@ -314,6 +314,26 @@ for i in 1..=M {
 }
 ```
 
+## グリッド問題の盆栽
+
+```rust
+enum Dir {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+}
+
+fn can_move(s: &Vec<Vec<char>>, (i, j): (usize, usize), dir: Dir) -> bool {
+    match dir {
+        Dir::UP => i > 0 && s[i - 1][j] == '.',
+        Dir::DOWN => i < s.len() - 1 && s[i + 1][j] == '.',
+        Dir::LEFT => j > 0 && s[i][j - 1] == '.',
+        Dir::RIGHT => j < s[0].len() - 1 && s[i][j + 1] == '.',
+    }
+}
+
+```
 
 
 ## うまく分類できないの
