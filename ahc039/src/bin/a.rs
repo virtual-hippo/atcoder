@@ -6,12 +6,13 @@ use std::collections::HashSet;
 struct Square {
     x: usize,
     y: usize,
-    d: usize,
+    w: usize,
+    h: usize,
 }
 
 impl Square {
-    fn new(x: usize, y: usize, d: usize) -> Self {
-        Self { x, y, d }
+    fn new(x: usize, y: usize, w: usize, h: usize) -> Self {
+        Self { x, y, w, h }
     }
 }
 
@@ -32,6 +33,7 @@ fn main() {
             (0, 50_000),
             (0, 50_000),
             (10_000, 50_000),
+            (10_000, 50_000),
             &saba,
             &iwashi,
             &mut koho,
@@ -44,6 +46,7 @@ fn main() {
             (0, 25_000),
             (0, 25_000),
             (10_000, 25_000),
+            (10_000, 25_000),
             &saba,
             &iwashi,
             &mut koho,
@@ -53,6 +56,7 @@ fn main() {
             (50_001, 75_000),
             (50_001, 75_000),
             (10_000, 25_000),
+            (10_000, 25_000),
             &saba,
             &iwashi,
             &mut koho,
@@ -60,15 +64,15 @@ fn main() {
         koho.push((
             vec![
                 (square0.x, square0.y),
-                (square0.x + square0.d, square0.y),
-                (square0.x + square0.d, square0.y + square0.d - 1),
-                (square1.x + 1, square0.y + square0.d - 1),
+                (square0.x + square0.w, square0.y),
+                (square0.x + square0.w, square0.y + square0.h - 1),
+                (square1.x + 1, square0.y + square0.h - 1),
                 (square1.x + 1, square1.y),
-                (square1.x + square1.d, square1.y),
-                (square1.x + square1.d, square1.y + square1.d),
-                (square1.x, square1.y + square1.d),
-                (square1.x, square0.y + square0.d),
-                (square0.x, square0.y + square0.d),
+                (square1.x + square1.w, square1.y),
+                (square1.x + square1.w, square1.y + square1.h),
+                (square1.x, square1.y + square1.h),
+                (square1.x, square0.y + square0.h),
+                (square0.x, square0.y + square0.h),
             ],
             score0 + score1,
         ));
@@ -122,19 +126,20 @@ fn push_one_square(
     rng: &mut rand::prelude::ThreadRng,
     x_range: (usize, usize),
     y_range: (usize, usize),
-    d_range: (usize, usize),
+    w_range: (usize, usize),
+    h_range: (usize, usize),
     saba: &Vec<(usize, usize)>,
     iwashi: &Vec<(usize, usize)>,
     koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
 ) -> (Square, i64) {
-    let (square, score) = solve0(rng, x_range, y_range, d_range, &saba, &iwashi);
+    let (square, score) = solve0(rng, x_range, y_range, w_range, h_range, &saba, &iwashi);
 
     koho.push((
         vec![
             (square.x, square.y),
-            (square.x + square.d, square.y),
-            (square.x + square.d, square.y + square.d),
-            (square.x, square.y + square.d),
+            (square.x + square.w, square.y),
+            (square.x + square.w, square.y + square.h),
+            (square.x, square.y + square.h),
         ],
         score,
     ));
@@ -146,23 +151,25 @@ fn solve0(
     rng: &mut rand::prelude::ThreadRng,
     x_range: (usize, usize),
     y_range: (usize, usize),
-    d_range: (usize, usize),
+    w_range: (usize, usize),
+    h_range: (usize, usize),
     saba: &Vec<(usize, usize)>,
     iwashi: &Vec<(usize, usize)>,
 ) -> (Square, i64) {
-    let mut square = Square::new(0, 0, 0);
+    let mut square = Square::new(0, 0, 0, 0);
     let mut max_score = 0;
     for _ in 0..5000 {
         let x: usize = rng.gen_range(x_range.0..x_range.1);
         let y: usize = rng.gen_range(y_range.0..y_range.1);
-        let d: usize = rng.gen_range(d_range.0..d_range.1);
+        let w: usize = rng.gen_range(w_range.0..w_range.1);
+        let h: usize = rng.gen_range(h_range.0..h_range.1);
 
-        let a = count_fish_in_grid(x, y, d, saba);
-        let b = count_fish_in_grid(x, y, d, iwashi);
+        let a = count_fish_in_grid(x, y, w, h, saba);
+        let b = count_fish_in_grid(x, y, w, h, iwashi);
         let now = 0.max(a - b + 1);
 
         if now > max_score {
-            square = Square::new(x, y, d);
+            square = Square::new(x, y, w, h);
             max_score = now;
         }
     }
@@ -182,11 +189,11 @@ fn fetch_fish(n: usize) -> Vec<(usize, usize)> {
 }
 
 // O(5,000)
-fn count_fish_in_grid(x: usize, y: usize, d: usize, fish: &Vec<(usize, usize)>) -> i64 {
+fn count_fish_in_grid(x: usize, y: usize, w: usize, h: usize, fish: &Vec<(usize, usize)>) -> i64 {
     let mut ret = 0;
     for (i, j) in fish.iter() {
-        if x <= *i && *i < x + d {
-            if y <= *j && *j < y + d {
+        if x <= *i && *i < x + w {
+            if y <= *j && *j < y + h {
                 ret += 1;
             }
         }
