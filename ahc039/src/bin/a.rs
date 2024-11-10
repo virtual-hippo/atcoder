@@ -27,56 +27,8 @@ fn main() {
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
 
     let mut koho = vec![];
-    {
-        push_one_square(
-            &mut rng,
-            (0, 50_000),
-            (0, 50_000),
-            (10_000, 50_000),
-            (10_000, 50_000),
-            &saba,
-            &iwashi,
-            &mut koho,
-        );
-    }
-
-    {
-        let (square0, score0) = push_one_square(
-            &mut rng,
-            (0, 25_000),
-            (0, 25_000),
-            (10_000, 25_000),
-            (10_000, 25_000),
-            &saba,
-            &iwashi,
-            &mut koho,
-        );
-        let (square1, score1) = push_one_square(
-            &mut rng,
-            (50_001, 75_000),
-            (50_001, 75_000),
-            (10_000, 25_000),
-            (10_000, 25_000),
-            &saba,
-            &iwashi,
-            &mut koho,
-        );
-        koho.push((
-            vec![
-                (square0.x, square0.y),
-                (square0.x + square0.w, square0.y),
-                (square0.x + square0.w, square0.y + square0.h - 1),
-                (square1.x + 1, square0.y + square0.h - 1),
-                (square1.x + 1, square1.y),
-                (square1.x + square1.w, square1.y),
-                (square1.x + square1.w, square1.y + square1.h),
-                (square1.x, square1.y + square1.h),
-                (square1.x, square0.y + square0.h),
-                (square0.x, square0.y + square0.h),
-            ],
-            score0 + score1,
-        ));
-    }
+    solve0(&mut rng, &saba, &iwashi, &mut koho);
+    solve1(&mut rng, &saba, &iwashi, &mut koho);
 
     let ans = {
         let mut tmp = koho[0].clone();
@@ -122,6 +74,67 @@ fn check_ami(ami: &[(usize, usize)]) -> bool {
     true
 }
 
+fn solve0(
+    rng: &mut rand::prelude::ThreadRng,
+    saba: &Vec<(usize, usize)>,
+    iwashi: &Vec<(usize, usize)>,
+    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
+) {
+    push_one_square(
+        rng,
+        (0, 50_000),
+        (0, 50_000),
+        (10_000, 50_000),
+        (10_000, 50_000),
+        &saba,
+        &iwashi,
+        koho,
+    );
+}
+
+fn solve1(
+    rng: &mut rand::prelude::ThreadRng,
+    saba: &Vec<(usize, usize)>,
+    iwashi: &Vec<(usize, usize)>,
+    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
+) {
+    let (square0, score0) = push_one_square(
+        rng,
+        (0, 25_000),
+        (0, 25_000),
+        (10_000, 25_000),
+        (10_000, 25_000),
+        &saba,
+        &iwashi,
+        koho,
+    );
+    let (square1, score1) = push_one_square(
+        rng,
+        (50_001, 75_000),
+        (50_001, 75_000),
+        (10_000, 25_000),
+        (10_000, 25_000),
+        &saba,
+        &iwashi,
+        koho,
+    );
+    koho.push((
+        vec![
+            (square0.x, square0.y),
+            (square0.x + square0.w, square0.y),
+            (square0.x + square0.w, square0.y + square0.h - 1),
+            (square1.x + 1, square0.y + square0.h - 1),
+            (square1.x + 1, square1.y),
+            (square1.x + square1.w, square1.y),
+            (square1.x + square1.w, square1.y + square1.h),
+            (square1.x, square1.y + square1.h),
+            (square1.x, square0.y + square0.h),
+            (square0.x, square0.y + square0.h),
+        ],
+        score0 + score1,
+    ));
+}
+
 fn push_one_square(
     rng: &mut rand::prelude::ThreadRng,
     x_range: (usize, usize),
@@ -132,7 +145,7 @@ fn push_one_square(
     iwashi: &Vec<(usize, usize)>,
     koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
 ) -> (Square, i64) {
-    let (square, score) = solve0(rng, x_range, y_range, w_range, h_range, &saba, &iwashi);
+    let (square, score) = get_one_square(rng, x_range, y_range, w_range, h_range, &saba, &iwashi);
 
     koho.push((
         vec![
@@ -147,7 +160,7 @@ fn push_one_square(
     (square, score)
 }
 
-fn solve0(
+fn get_one_square(
     rng: &mut rand::prelude::ThreadRng,
     x_range: (usize, usize),
     y_range: (usize, usize),
