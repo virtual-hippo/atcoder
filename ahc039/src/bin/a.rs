@@ -1,7 +1,8 @@
-use std::collections::btree_map::Range;
-
 use proconio::{fastout, input};
 use rand::Rng;
+use std::collections::HashSet;
+
+#[derive(Clone, Copy)]
 struct Square {
     x: usize,
     y: usize,
@@ -24,20 +25,121 @@ fn main() {
 
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
 
-    let (square, _score) = solve0(
-        &mut rng,
-        (0, 50_000),
-        (0, 50_000),
-        (10_000, 50_000),
-        &saba,
-        &iwashi,
-    );
+    let mut koho = vec![];
+    {
+        push_one_square(
+            &mut rng,
+            (0, 50_000),
+            (0, 50_000),
+            (10_000, 50_000),
+            &saba,
+            &iwashi,
+            &mut koho,
+        );
+    }
 
-    println!("4");
-    println!("{} {}", square.x, square.y);
-    println!("{} {}", square.x + square.d, square.y);
-    println!("{} {}", square.x + square.d, square.y + square.d);
-    println!("{} {}", square.x, square.y + square.d);
+    {
+        let (square0, score0) = push_one_square(
+            &mut rng,
+            (0, 25_000),
+            (0, 25_000),
+            (10_000, 25_000),
+            &saba,
+            &iwashi,
+            &mut koho,
+        );
+        let (square1, score1) = push_one_square(
+            &mut rng,
+            (50_001, 75_000),
+            (50_001, 75_000),
+            (10_000, 25_000),
+            &saba,
+            &iwashi,
+            &mut koho,
+        );
+        koho.push((
+            vec![
+                (square0.x, square0.y),
+                (square0.x + square0.d, square0.y),
+                (square0.x + square0.d, square0.y + square0.d - 1),
+                (square1.x + 1, square0.y + square0.d - 1),
+                (square1.x + 1, square1.y),
+                (square1.x + square1.d, square1.y),
+                (square1.x + square1.d, square1.y + square1.d),
+                (square1.x, square1.y + square1.d),
+                (square1.x, square0.y + square0.d),
+                (square0.x, square0.y + square0.d),
+            ],
+            score0 + score1,
+        ));
+    }
+
+    let ans = {
+        let mut tmp = koho[0].clone();
+        for i in 1..koho.len() {
+            let (ami, score) = &koho[i];
+            if check_ami(&ami) && tmp.1 < *score {
+                tmp = (ami.clone(), *score);
+            }
+        }
+        tmp.0
+    };
+
+    println!("{}", ans.len());
+    for (x, y) in ans.iter() {
+        println!("{} {}", x, y);
+    }
+}
+
+fn check_ami(ami: &[(usize, usize)]) -> bool {
+    let length = {
+        let mut length = 0;
+        for i in 1..ami.len() {
+            let x_diff = (ami[i].0 as i64 - ami[i - 1].0 as i64).abs();
+            let y_diff = (ami[i].1 as i64 - ami[i - 1].1 as i64).abs();
+            length += x_diff + y_diff;
+        }
+        let x_diff = (ami[0].0 as i64 - ami[ami.len() - 1].0 as i64).abs();
+        let y_diff = (ami[0].1 as i64 - ami[ami.len() - 1].1 as i64).abs();
+        length += x_diff + y_diff;
+
+        length
+    };
+    if length >= 4 * 100_000 {
+        return false;
+    }
+    let mut set = HashSet::new();
+    for p in ami.iter() {
+        set.insert(*p);
+    }
+    if set.len() != ami.len() {
+        return false;
+    }
+    true
+}
+
+fn push_one_square(
+    rng: &mut rand::prelude::ThreadRng,
+    x_range: (usize, usize),
+    y_range: (usize, usize),
+    d_range: (usize, usize),
+    saba: &Vec<(usize, usize)>,
+    iwashi: &Vec<(usize, usize)>,
+    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
+) -> (Square, i64) {
+    let (square, score) = solve0(rng, x_range, y_range, d_range, &saba, &iwashi);
+
+    koho.push((
+        vec![
+            (square.x, square.y),
+            (square.x + square.d, square.y),
+            (square.x + square.d, square.y + square.d),
+            (square.x, square.y + square.d),
+        ],
+        score,
+    ));
+
+    (square, score)
 }
 
 fn solve0(
