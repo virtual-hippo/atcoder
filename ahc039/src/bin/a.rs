@@ -26,7 +26,7 @@ pub struct State {
     /// 各マスごとの魚の数
     fish_cnt_each_grid: Vec<Vec<(usize, usize)>>,
     /// 多角形の辺の合計
-    len: usize,
+    len: i64,
 }
 
 impl State {
@@ -310,6 +310,8 @@ mod grid_to_graph {
 }
 
 mod optimization {
+    use check_length::check_length;
+
     use super::*;
 
     pub fn optimize(
@@ -358,24 +360,29 @@ mod optimization {
     }
 
     fn update_grid(state: &mut State, (i, j): (usize, usize)) {
-        // 更新してもスコアが上がらない場合は return
-        let mut rng = rand::prelude::ThreadRng::default();
-        if state.get_score() > state.get_new_score(i, j) + rng.gen_range(0..10) {
+        if !is_connect((i, j), state) {
+            return;
+        }
+        let length_diff = check_length::get_length_diff((i, j), state);
+        if !check_length(length_diff, state) {
             return;
         }
 
-        if can_update((i, j), state) {
+        let mut rng = rand::prelude::ThreadRng::default();
+        if state.get_score() <= state.get_new_score(i, j) + rng.gen_range(0..10) {
             state.grid[i][j] = !state.grid[i][j];
+            state.len += length_diff;
+            return;
         }
     }
 
-    fn can_update(point: (usize, usize), state: &mut State) -> bool {
-        let is_connect = if state.grid[point.0][point.1] {
+    /// 更新して連結性を保てられるか
+    fn is_connect(point: (usize, usize), state: &mut State) -> bool {
+        if state.grid[point.0][point.1] {
             can_erase(point, &state.grid)
         } else {
             can_add(point, &state.grid)
-        };
-        is_connect && check_length::check_length(point, state)
+        }
     }
 
     fn can_erase((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> bool {
@@ -461,81 +468,64 @@ mod optimization {
     mod check_length {
         use super::*;
 
-        pub fn check_length(point: (usize, usize), state: &mut State) -> bool {
-            let diff = if state.grid[point.0][point.1] {
-                let cnt = count_to_off(point, state);
-                diff_to_off(state, cnt)
+        pub fn check_length(length_diff: i64, state: &mut State) -> bool {
+            state.len as i64 + length_diff <= 100_000 * 4
+        }
+
+        /// マスを更新した際の長さの差分を求める
+        pub fn get_length_diff(point: (usize, usize), state: &mut State) -> i64 {
+            let cnt = count(point, state);
+            match cnt {
+                1 => -2 * state.get_d() as i64,
+                2 => 0,
+                3 => 2 * state.get_d() as i64,
+                _ => unreachable!(),
+            }
+        }
+
+        // 左右上下で接しているマスの内自身のマスと異なるマスの個数を数える
+        fn count(point: (usize, usize), state: &State) -> usize {
+            if state.grid[point.0][point.1] {
+                count_to_off(point, state)
             } else {
-                let cnt = count_to_on(point, state);
-                diff_to_on(state, cnt)
-            };
-
-            let ret = state.len as i64 + diff <= 100_000 * 4;
-            if ret {
-                state.len = (state.len as i64 + diff) as usize;
-            }
-
-            ret
-        }
-
-        fn diff_to_off(state: &mut State, cnt: usize) -> i64 {
-            match cnt {
-                1 => -2 * state.get_d() as i64,
-                2 => 0,
-                3 => 2 * state.get_d() as i64,
-                _ => unreachable!(),
-            }
-        }
-
-        fn diff_to_on(state: &mut State, cnt: usize) -> i64 {
-            match cnt {
-                1 => -2 * state.get_d() as i64,
-                2 => 0,
-                3 => 2 * state.get_d() as i64,
-                _ => unreachable!(),
+                count_to_on(point, state)
             }
         }
 
         // マスを更新した際に左右上下で接しているマスの内 true の個数を数える
-        fn count_to_off((i, j): (usize, usize), state: &mut State) -> usize {
-            let cnt = {
-                let mut ret = 0;
-                if i > 0 && state.grid[i - 1][j] {
-                    ret += 1;
-                }
-                if j > 0 && state.grid[i][j - 1] {
-                    ret += 1;
-                }
-                if i < state.grid.len() - 1 && state.grid[i + 1][j] {
-                    ret += 1;
-                }
-                if j < state.grid.len() - 1 && state.grid[i][j + 1] {
-                    ret += 1;
-                }
-                ret
-            };
-            cnt
+        fn count_to_off((i, j): (usize, usize), state: &State) -> usize {
+            let mut ret = 0;
+            if i > 0 && state.grid[i - 1][j] {
+                ret += 1;
+            }
+            if j > 0 && state.grid[i][j - 1] {
+                ret += 1;
+            }
+            if i < state.grid.len() - 1 && state.grid[i + 1][j] {
+                ret += 1;
+            }
+            if j < state.grid.len() - 1 && state.grid[i][j + 1] {
+                ret += 1;
+            }
+            ret
         }
 
         // マスを更新した際に左右上下で接しているマスの内 false or 壁 の個数を数える
-        fn count_to_on((i, j): (usize, usize), state: &mut State) -> usize {
-            let cnt = {
-                let mut ret = 0;
-                if i == 0 || !state.grid[i - 1][j] {
-                    ret += 1;
-                }
-                if j == 0 || !state.grid[i][j - 1] {
-                    ret += 1;
-                }
-                if i == state.grid.len() - 1 || !state.grid[i + 1][j] {
-                    ret += 1;
-                }
-                if j == state.grid.len() - 1 || !state.grid[i][j + 1] {
-                    ret += 1;
-                }
-                ret
-            };
-            cnt
+        fn count_to_on((i, j): (usize, usize), state: &State) -> usize {
+            let mut ret = 0;
+            if i == 0 || !state.grid[i - 1][j] {
+                ret += 1;
+            }
+            if j == 0 || !state.grid[i][j - 1] {
+                ret += 1;
+            }
+            if i == state.grid.len() - 1 || !state.grid[i + 1][j] {
+                ret += 1;
+            }
+            if j == state.grid.len() - 1 || !state.grid[i][j + 1] {
+                ret += 1;
+            }
+            ret
         }
     }
 }
