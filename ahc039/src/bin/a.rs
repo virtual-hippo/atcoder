@@ -1,215 +1,576 @@
 use proconio::{fastout, input};
+
 use rand::Rng;
-use std::collections::HashSet;
-
-#[derive(Clone, Copy)]
-struct Square {
-    x: usize,
-    y: usize,
-    w: usize,
-    h: usize,
-}
-
-impl Square {
-    fn new(x: usize, y: usize, w: usize, h: usize) -> Self {
-        Self { x, y, w, h }
-    }
-}
+use std::collections::{HashMap, HashSet};
+use std::time::{Duration, Instant};
 
 #[fastout]
 fn main() {
     input! {
         n: usize,
     }
-    let saba = fetch_fish(n);
-    let iwashi = fetch_fish(n);
+    let saba = init::fetch_fish(n);
+    let iwashi = init::fetch_fish(n);
 
-    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    solve(&saba, &iwashi);
+}
 
-    let mut koho = vec![];
-    solve0(&mut rng, &saba, &iwashi, &mut koho);
-    solve1(&mut rng, &saba, &iwashi, &mut koho);
+struct Point(usize, usize);
 
-    let ans = {
-        let mut tmp = koho[0].clone();
-        for i in 1..koho.len() {
-            let (ami, score) = &koho[i];
-            if check_ami(&ami) && tmp.1 < *score {
-                tmp = (ami.clone(), *score);
+#[derive(Clone)]
+pub struct State {
+    /// 各マスについて使うかどうかの状態保持
+    grid: Vec<Vec<bool>>,
+    /// 1 マスあたりの辺の長さ
+    grid_size: usize,
+    /// 各マスごとの魚の数
+    fish_cnt_each_grid: Vec<Vec<(usize, usize)>>,
+    /// 多角形の辺の合計
+    len: usize,
+}
+
+impl State {
+    fn default(d: usize, saba: &Vec<(usize, usize)>, iwashi: &Vec<(usize, usize)>) -> Self {
+        let grid = vec![vec![true; d]; d];
+        let grid_size = 100_000 / d;
+        // すべてのマスを選択するので辺の長さの合計は 100_000 * 4
+        let len = 100_000 * 4;
+        let fish_cnt_each_grid = init::count_fish_each_grid(grid_size, saba, iwashi);
+        State {
+            grid,
+            grid_size,
+            fish_cnt_each_grid,
+            len,
+        }
+    }
+
+    fn divide_grid(&self, saba: &Vec<(usize, usize)>, iwashi: &Vec<(usize, usize)>) -> Self {
+        let d = self.get_d() * 2;
+        let grid_size = 100_000 / d;
+        let mut grid = vec![vec![false; d]; d];
+        for i in 0..self.grid.len() {
+            for j in 0..self.grid.len() {
+                grid[i * 2][j * 2] = self.grid[i][j];
+                grid[i * 2][j * 2 + 1] = self.grid[i][j];
+                grid[i * 2 + 1][j * 2] = self.grid[i][j];
+                grid[i * 2 + 1][j * 2 + 1] = self.grid[i][j];
             }
         }
-        tmp.0
-    };
-
-    println!("{}", ans.len());
-    for (x, y) in ans.iter() {
-        println!("{} {}", x, y);
-    }
-}
-
-fn check_ami(ami: &[(usize, usize)]) -> bool {
-    let length = {
-        let mut length = 0;
-        for i in 1..ami.len() {
-            let x_diff = (ami[i].0 as i64 - ami[i - 1].0 as i64).abs();
-            let y_diff = (ami[i].1 as i64 - ami[i - 1].1 as i64).abs();
-            length += x_diff + y_diff;
-        }
-        let x_diff = (ami[0].0 as i64 - ami[ami.len() - 1].0 as i64).abs();
-        let y_diff = (ami[0].1 as i64 - ami[ami.len() - 1].1 as i64).abs();
-        length += x_diff + y_diff;
-
-        length
-    };
-    if length >= 4 * 100_000 {
-        return false;
-    }
-    let mut set = HashSet::new();
-    for p in ami.iter() {
-        set.insert(*p);
-    }
-    if set.len() != ami.len() {
-        return false;
-    }
-    true
-}
-
-fn solve0(
-    rng: &mut rand::prelude::ThreadRng,
-    saba: &Vec<(usize, usize)>,
-    iwashi: &Vec<(usize, usize)>,
-    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
-) {
-    push_one_square(
-        rng,
-        (0, 50_000),
-        (0, 50_000),
-        (10_000, 50_000),
-        (10_000, 50_000),
-        &saba,
-        &iwashi,
-        koho,
-    );
-}
-
-fn solve1(
-    rng: &mut rand::prelude::ThreadRng,
-    saba: &Vec<(usize, usize)>,
-    iwashi: &Vec<(usize, usize)>,
-    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
-) {
-    let (square0, score0) = push_one_square(
-        rng,
-        (0, 25_000),
-        (0, 25_000),
-        (10_000, 25_000),
-        (10_000, 25_000),
-        &saba,
-        &iwashi,
-        koho,
-    );
-    let (square1, score1) = push_one_square(
-        rng,
-        (50_001, 75_000),
-        (50_001, 75_000),
-        (10_000, 25_000),
-        (10_000, 25_000),
-        &saba,
-        &iwashi,
-        koho,
-    );
-    koho.push((
-        vec![
-            (square0.x, square0.y),
-            (square0.x + square0.w, square0.y),
-            (square0.x + square0.w, square0.y + square0.h - 1),
-            (square1.x + 1, square0.y + square0.h - 1),
-            (square1.x + 1, square1.y),
-            (square1.x + square1.w, square1.y),
-            (square1.x + square1.w, square1.y + square1.h),
-            (square1.x, square1.y + square1.h),
-            (square1.x, square0.y + square0.h),
-            (square0.x, square0.y + square0.h),
-        ],
-        score0 + score1,
-    ));
-}
-
-fn push_one_square(
-    rng: &mut rand::prelude::ThreadRng,
-    x_range: (usize, usize),
-    y_range: (usize, usize),
-    w_range: (usize, usize),
-    h_range: (usize, usize),
-    saba: &Vec<(usize, usize)>,
-    iwashi: &Vec<(usize, usize)>,
-    koho: &mut Vec<(Vec<(usize, usize)>, i64)>,
-) -> (Square, i64) {
-    let (square, score) = get_one_square(rng, x_range, y_range, w_range, h_range, &saba, &iwashi);
-
-    koho.push((
-        vec![
-            (square.x, square.y),
-            (square.x + square.w, square.y),
-            (square.x + square.w, square.y + square.h),
-            (square.x, square.y + square.h),
-        ],
-        score,
-    ));
-
-    (square, score)
-}
-
-fn get_one_square(
-    rng: &mut rand::prelude::ThreadRng,
-    x_range: (usize, usize),
-    y_range: (usize, usize),
-    w_range: (usize, usize),
-    h_range: (usize, usize),
-    saba: &Vec<(usize, usize)>,
-    iwashi: &Vec<(usize, usize)>,
-) -> (Square, i64) {
-    let mut square = Square::new(0, 0, 0, 0);
-    let mut max_score = 0;
-    for _ in 0..5000 {
-        let x: usize = rng.gen_range(x_range.0..x_range.1);
-        let y: usize = rng.gen_range(y_range.0..y_range.1);
-        let w: usize = rng.gen_range(w_range.0..w_range.1);
-        let h: usize = rng.gen_range(h_range.0..h_range.1);
-
-        let a = count_fish_in_grid(x, y, w, h, saba);
-        let b = count_fish_in_grid(x, y, w, h, iwashi);
-        let now = 0.max(a - b + 1);
-
-        if now > max_score {
-            square = Square::new(x, y, w, h);
-            max_score = now;
+        let fish_cnt_each_grid = init::count_fish_each_grid(grid_size, saba, iwashi);
+        State {
+            grid,
+            grid_size,
+            fish_cnt_each_grid,
+            len: self.len,
         }
     }
-    (square, max_score)
-}
 
-fn fetch_fish(n: usize) -> Vec<(usize, usize)> {
-    let mut fish = vec![];
-    for _ in 0..n {
-        input! {
-            x: usize,
-            y: usize,
+    fn get_score(&self) -> i64 {
+        let mut a = 0;
+        let mut b = 0;
+        let d = self.get_d();
+        for i in 0..d {
+            for j in 0..d {
+                if self.grid[i][j] {
+                    a += self.fish_cnt_each_grid[i][j].0 as i64;
+                    b += self.fish_cnt_each_grid[i][j].1 as i64;
+                }
+            }
         }
-        fish.push((x, y));
+        0.max(a - b + 1)
     }
-    fish
+
+    /// 指定したマスを更新した際のスコアを求める
+    fn get_new_score(&mut self, i: usize, j: usize) -> i64 {
+        self.grid[i][j] = !self.grid[i][j];
+        let score = self.get_score();
+        self.grid[i][j] = !self.grid[i][j];
+        score
+    }
+
+    fn get_d(&self) -> usize {
+        100_000 / self.grid_size
+    }
 }
 
-// O(5,000)
-fn count_fish_in_grid(x: usize, y: usize, w: usize, h: usize, fish: &Vec<(usize, usize)>) -> i64 {
-    let mut ret = 0;
-    for (i, j) in fish.iter() {
-        if x <= *i && *i < x + w {
-            if y <= *j && *j < y + h {
-                ret += 1;
+fn solve(saba: &Vec<(usize, usize)>, iwashi: &Vec<(usize, usize)>) {
+    // 1.93sを実行上限とする
+    let time_limit = Duration::from_millis(1930);
+    let start_time = Instant::now();
+
+    let mut best_state = State::default(10, saba, iwashi);
+
+    // 10
+    best_state = optimization::optimize(start_time, time_limit, 20, &mut best_state);
+
+    // 20
+    let mut best_state = best_state.divide_grid(saba, iwashi);
+    best_state = optimization::optimize(start_time, time_limit, 200, &mut best_state);
+
+    // 40
+    let mut best_state = best_state.divide_grid(saba, iwashi);
+    best_state = optimization::optimize(start_time, time_limit, 150, &mut best_state);
+
+    // 80
+    let mut best_state = best_state.divide_grid(saba, iwashi);
+    best_state = optimization::optimize(start_time, time_limit, 150, &mut best_state);
+
+    // 160
+    let mut best_state = best_state.divide_grid(saba, iwashi);
+    _ = optimization::optimize(start_time, time_limit, 150, &mut best_state);
+}
+
+mod output {
+    pub fn print_answer(answer: &Vec<(usize, usize)>) {
+        println!("{}", answer.len());
+        for (x, y) in answer.iter() {
+            println!("{} {}", x, y);
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn print_grid(grid: &Vec<Vec<bool>>) {
+        let len = grid.len();
+        for i in 0..len {
+            for j in 0..len {
+                if grid[i][j] {
+                    print!("#");
+                } else {
+                    print!(".");
+                }
+            }
+            println!("");
+        }
+    }
+}
+
+mod graph_to_answer {
+    use super::*;
+
+    pub fn graph_to_answer(
+        graph: &HashMap<(usize, usize), Vec<(usize, usize)>>,
+    ) -> Vec<(usize, usize)> {
+        let mut answer = vec![];
+        let mut visited = HashSet::new();
+        let pos = get_start_point(&graph).unwrap();
+        dfs(&mut visited, graph, &mut answer, pos);
+
+        // 同一辺上に複数の点が存在しないようにする
+        let mut check_same_edge_flags = vec![true; answer.len()];
+        for i in 1..answer.len() - 1 {
+            if answer[i].0 == answer[i - 1].0 && answer[i].0 == answer[i + 1].0 {
+                check_same_edge_flags[i] = false;
+            }
+            if answer[i].1 == answer[i - 1].1 && answer[i].1 == answer[i + 1].1 {
+                check_same_edge_flags[i] = false;
+            }
+        }
+        answer
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| check_same_edge_flags[*i])
+            .map(|(_, &(i, j))| (j, 100_000 - i))
+            .collect::<Vec<(usize, usize)>>()
+    }
+
+    fn get_start_point(
+        graph: &HashMap<(usize, usize), Vec<(usize, usize)>>,
+    ) -> Option<(usize, usize)> {
+        for k in graph.keys() {
+            if let Some(points) = graph.get(k) {
+                if points.len() == 2 {
+                    return Some(*k);
+                }
+            }
+        }
+        None
+    }
+
+    fn dfs(
+        visited: &mut HashSet<(usize, usize)>,
+        graph: &HashMap<(usize, usize), Vec<(usize, usize)>>,
+        answer: &mut Vec<(usize, usize)>,
+        pos: (usize, usize),
+    ) {
+        visited.insert(pos);
+        answer.push(pos);
+        if let Some(points) = graph.get(&pos) {
+            for point in points.iter() {
+                if !visited.contains(point) {
+                    dfs(visited, graph, answer, *point);
+                    break;
+                }
             }
         }
     }
-    ret
+}
+
+mod grid_to_graph {
+    use super::*;
+
+    pub fn grid_to_graph(state: &State) -> HashMap<(usize, usize), Vec<(usize, usize)>> {
+        let mut graph = HashMap::new();
+
+        for i in 0..state.get_d() {
+            for j in 0..state.get_d() {
+                if !state.grid[i][j] {
+                    continue;
+                }
+                if let Some([u, v]) = check_top(state, i, j) {
+                    let u = (u.0, u.1);
+                    let v = (v.0, v.1);
+                    graph.entry(u).or_insert_with(|| vec![]).push(v);
+                    graph.entry(v).or_insert_with(|| vec![]).push(u);
+                }
+                if let Some([u, v]) = check_bottom(state, i, j) {
+                    let u = (u.0, u.1);
+                    let v = (v.0, v.1);
+                    graph.entry(u).or_insert_with(|| vec![]).push(v);
+                    graph.entry(v).or_insert_with(|| vec![]).push(u);
+                }
+                if let Some([u, v]) = check_left(state, i, j) {
+                    let u = (u.0, u.1);
+                    let v = (v.0, v.1);
+                    graph.entry(u).or_insert_with(|| vec![]).push(v);
+                    graph.entry(v).or_insert_with(|| vec![]).push(u);
+                }
+                if let Some([u, v]) = check_right(state, i, j) {
+                    let u = (u.0, u.1);
+                    let v = (v.0, v.1);
+                    graph.entry(u).or_insert_with(|| vec![]).push(v);
+                    graph.entry(v).or_insert_with(|| vec![]).push(u);
+                }
+            }
+        }
+        // TODO: 辺上の点を取り除く
+        graph
+    }
+
+    fn check_top(state: &State, i: usize, j: usize) -> Option<[Point; 2]> {
+        let u = Point(i * state.grid_size, j * state.grid_size);
+        let v = Point(i * state.grid_size, j * state.grid_size + state.grid_size);
+
+        if i > 0 && !state.grid[i - 1][j] && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        if i == 0 && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        return None;
+    }
+
+    fn check_bottom(state: &State, i: usize, j: usize) -> Option<[Point; 2]> {
+        let h = state.grid.len();
+
+        let u = Point(i * state.grid_size + state.grid_size, j * state.grid_size);
+        let v = Point(
+            i * state.grid_size + state.grid_size,
+            j * state.grid_size + state.grid_size,
+        );
+
+        if i < h - 1 && !state.grid[i + 1][j] && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        if i == h - 1 && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        return None;
+    }
+
+    fn check_left(state: &State, i: usize, j: usize) -> Option<[Point; 2]> {
+        let u = Point(i * state.grid_size, j * state.grid_size);
+        let v = Point(i * state.grid_size + state.grid_size, j * state.grid_size);
+
+        if j > 0 && !state.grid[i][j - 1] && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        if j == 0 && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        return None;
+    }
+
+    fn check_right(state: &State, i: usize, j: usize) -> Option<[Point; 2]> {
+        let w = state.grid[0].len();
+
+        let u = Point(i * state.grid_size, j * state.grid_size + state.grid_size);
+        let v = Point(
+            i * state.grid_size + state.grid_size,
+            j * state.grid_size + state.grid_size,
+        );
+
+        if j < w - 1 && !state.grid[i][j + 1] && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        if j == w - 1 && state.grid[i][j] {
+            return Some([u, v]);
+        }
+        return None;
+    }
+}
+
+mod optimization {
+    use super::*;
+
+    pub fn optimize(
+        start_time: Instant,
+        time_limit: Duration,
+        round: usize,
+        state: &mut State,
+    ) -> State {
+        let mut best_score = 1;
+        let mut best_answer = vec![];
+        let mut best_state = state.clone();
+        for i in 0..round {
+            if start_time.elapsed() >= time_limit {
+                break;
+            }
+
+            update(state);
+            let graph = grid_to_graph::grid_to_graph(&state);
+            let answer = graph_to_answer::graph_to_answer(&graph);
+            if state.get_score() > best_score {
+                best_score = state.get_score();
+                best_answer = answer.clone();
+                best_state = state.clone();
+            } else {
+                let mm = if round > 50 { 10 } else { 5 };
+                if i % mm == 0 {
+                    *state = best_state.clone();
+                }
+            }
+            if i % 10 == 0 {
+                output::print_answer(&answer);
+            }
+        }
+        if best_answer.len() != 0 {
+            output::print_answer(&best_answer);
+        }
+        best_state
+    }
+
+    fn update(state: &mut State) {
+        for i in 0..state.get_d() {
+            for j in 0..state.get_d() {
+                update_grid(state, (i, j));
+            }
+        }
+    }
+
+    fn update_grid(state: &mut State, (i, j): (usize, usize)) {
+        // 更新してもスコアが上がらない場合は return
+        let mut rng = rand::prelude::ThreadRng::default();
+        if state.get_score() > state.get_new_score(i, j) + rng.gen_range(0..10) {
+            return;
+        }
+
+        if can_update((i, j), state) {
+            state.grid[i][j] = !state.grid[i][j];
+        }
+    }
+
+    fn can_update(point: (usize, usize), state: &mut State) -> bool {
+        let is_connect = if state.grid[point.0][point.1] {
+            can_erase(point, &state.grid)
+        } else {
+            can_add(point, &state.grid)
+        };
+        is_connect && check_length::check_length(point, state)
+    }
+
+    fn can_erase((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> bool {
+        let x = shokyo_kanosei::get_x((i, j), grid).map(|b| if b { 1 } else { 0 });
+        x[1] + x[3] + x[5] + x[7]
+            - x[0] * x[1] * x[3]
+            - x[1] * x[2] * x[5]
+            - x[3] * x[6] * x[7]
+            - x[5] * x[7] * x[8]
+            == 1
+            && !is_kakomareteru((i, j), grid)
+    }
+
+    fn can_add((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> bool {
+        let x = shokyo_kanosei::get_x((i, j), grid).map(|b| if b { 0 } else { 1 });
+        x[1] + x[3] + x[5] + x[7]
+            - x[0] * x[1] * x[3]
+            - x[1] * x[2] * x[5]
+            - x[3] * x[6] * x[7]
+            - x[5] * x[7] * x[8]
+            == 1
+            && !is_kakomareteinai((i, j), grid)
+    }
+
+    // 上下左右全てがtureか
+    fn is_kakomareteru((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> bool {
+        (0 < i && grid[i - 1][j])
+            && (i < grid.len() - 1 && grid[i + 1][j])
+            && (0 < j && grid[i][j - 1])
+            && (j < grid.len() - 1 && grid[i][j + 1])
+    }
+
+    // 上下左右全てがfalseか
+    fn is_kakomareteinai((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> bool {
+        (i == 0 || !grid[i - 1][j])
+            && (i == grid.len() - 1 || !grid[i + 1][j])
+            && (j == 0 || !grid[i][j - 1])
+            && (j == grid.len() - 1 || !grid[i][j + 1])
+    }
+
+    mod shokyo_kanosei {
+        pub fn get_x((i, j): (usize, usize), grid: &Vec<Vec<bool>>) -> [bool; 9] {
+            let mut x = [
+                false, false, false, false, grid[i][j], false, false, false, false,
+            ];
+            x[0] = if i > 0 && j > 0 {
+                grid[i - 1][j - 1]
+            } else {
+                false
+            };
+            x[1] = if i > 0 { grid[i - 1][j] } else { false };
+            x[2] = if i > 0 && j < grid.len() - 1 {
+                grid[i - 1][j + 1]
+            } else {
+                false
+            };
+            x[3] = if j > 0 { grid[i][j - 1] } else { false };
+            x[5] = if j < grid.len() - 1 {
+                grid[i][j + 1]
+            } else {
+                false
+            };
+
+            x[6] = if i < grid.len() - 1 && j > 0 {
+                grid[i + 1][j - 1]
+            } else {
+                false
+            };
+            x[7] = if i < grid.len() - 1 {
+                grid[i + 1][j]
+            } else {
+                false
+            };
+            x[8] = if i < grid.len() - 1 && j < grid.len() - 1 {
+                grid[i + 1][j + 1]
+            } else {
+                false
+            };
+            x
+        }
+    }
+
+    mod check_length {
+        use super::*;
+
+        pub fn check_length(point: (usize, usize), state: &mut State) -> bool {
+            let diff = if state.grid[point.0][point.1] {
+                let cnt = count_to_off(point, state);
+                diff_to_off(state, cnt)
+            } else {
+                let cnt = count_to_on(point, state);
+                diff_to_on(state, cnt)
+            };
+
+            let ret = state.len as i64 + diff <= 100_000 * 4;
+            if ret {
+                state.len = (state.len as i64 + diff) as usize;
+            }
+
+            ret
+        }
+
+        fn diff_to_off(state: &mut State, cnt: usize) -> i64 {
+            match cnt {
+                1 => -2 * state.get_d() as i64,
+                2 => 0,
+                3 => 2 * state.get_d() as i64,
+                _ => unreachable!(),
+            }
+        }
+
+        fn diff_to_on(state: &mut State, cnt: usize) -> i64 {
+            match cnt {
+                1 => -2 * state.get_d() as i64,
+                2 => 0,
+                3 => 2 * state.get_d() as i64,
+                _ => unreachable!(),
+            }
+        }
+
+        // マスを更新した際に左右上下で接しているマスの内 true の個数を数える
+        fn count_to_off((i, j): (usize, usize), state: &mut State) -> usize {
+            let cnt = {
+                let mut ret = 0;
+                if i > 0 && state.grid[i - 1][j] {
+                    ret += 1;
+                }
+                if j > 0 && state.grid[i][j - 1] {
+                    ret += 1;
+                }
+                if i < state.grid.len() - 1 && state.grid[i + 1][j] {
+                    ret += 1;
+                }
+                if j < state.grid.len() - 1 && state.grid[i][j + 1] {
+                    ret += 1;
+                }
+                ret
+            };
+            cnt
+        }
+
+        // マスを更新した際に左右上下で接しているマスの内 false or 壁 の個数を数える
+        fn count_to_on((i, j): (usize, usize), state: &mut State) -> usize {
+            let cnt = {
+                let mut ret = 0;
+                if i == 0 || !state.grid[i - 1][j] {
+                    ret += 1;
+                }
+                if j == 0 || !state.grid[i][j - 1] {
+                    ret += 1;
+                }
+                if i == state.grid.len() - 1 || !state.grid[i + 1][j] {
+                    ret += 1;
+                }
+                if j == state.grid.len() - 1 || !state.grid[i][j + 1] {
+                    ret += 1;
+                }
+                ret
+            };
+            cnt
+        }
+    }
+}
+
+mod init {
+    use super::*;
+
+    pub fn fetch_fish(n: usize) -> Vec<(usize, usize)> {
+        let mut fish = vec![];
+        for _ in 0..n {
+            input! {
+                j: usize,
+                i: usize,
+            }
+            let j = j.min(99_999);
+            let i = i.max(1);
+            fish.push((100_000 - i, j));
+        }
+        fish
+    }
+
+    pub fn count_fish_each_grid(
+        grid_size: usize,
+        saba: &Vec<(usize, usize)>,
+        iwashi: &Vec<(usize, usize)>,
+    ) -> Vec<Vec<(usize, usize)>> {
+        let d = 100_000 / grid_size;
+        let mut ret = vec![vec![(0, 0); d]; d];
+        for &(i, j) in saba.iter() {
+            ret[i / grid_size][j / grid_size].0 += 1;
+        }
+        for &(i, j) in iwashi.iter() {
+            ret[i / grid_size][j / grid_size].1 += 1;
+        }
+
+        ret
+    }
 }
