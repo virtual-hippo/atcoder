@@ -117,6 +117,10 @@ fn solve(saba: &Vec<(usize, usize)>, iwashi: &Vec<(usize, usize)>) {
 
     // 160
     let mut best_state = best_state.divide_grid(saba, iwashi);
+    best_state = optimization::optimize(start_time, time_limit, 150, &mut best_state);
+
+    // 320
+    let mut best_state = best_state.divide_grid(saba, iwashi);
     _ = optimization::optimize(start_time, time_limit, 150, &mut best_state);
 }
 
@@ -368,8 +372,19 @@ mod optimization {
             return;
         }
 
+        let d = state.get_d();
         let mut rng = rand::prelude::ThreadRng::default();
-        if state.get_score() <= state.get_new_score(i, j) + rng.gen_range(0..10) {
+        let geta = if d <= 20 {
+            rng.gen_range(0..25)
+        } else if d <= 40 {
+            rng.gen_range(0..15)
+        } else if d <= 80 {
+            rng.gen_range(0..7)
+        } else {
+            rng.gen_range(0..1)
+        };
+
+        if state.get_score() <= state.get_new_score(i, j) + geta {
             state.grid[i][j] = !state.grid[i][j];
             state.len += length_diff;
             return;
