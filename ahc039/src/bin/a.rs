@@ -94,7 +94,7 @@ impl State {
 }
 
 fn solve(saba: &Vec<(usize, usize)>, iwashi: &Vec<(usize, usize)>) {
-    // 1.93sを実行上限とする
+    // 実行時間上限
     let time_limit = Duration::from_millis(1930);
     let start_time = Instant::now();
 
@@ -332,7 +332,7 @@ mod optimization {
                 break;
             }
 
-            update(state);
+            update(state, start_time, time_limit);
             let graph = grid_to_graph::grid_to_graph(&state);
             let answer = graph_to_answer::graph_to_answer(&graph);
             if state.get_score() > best_score {
@@ -355,9 +355,12 @@ mod optimization {
         best_state
     }
 
-    fn update(state: &mut State) {
+    fn update(state: &mut State, start_time: Instant, time_limit: Duration) {
         for i in 0..state.get_d() {
             for j in 0..state.get_d() {
+                if start_time.elapsed() >= time_limit {
+                    break;
+                }
                 update_grid(state, (i, j));
             }
         }
