@@ -99,6 +99,25 @@ let large_chars = vec!['A','B','C','D','E','F','G','H','I','J','K','L','M','N','
 let small_chars = vec!['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
 ```
 
+### 大文字と小文字の相互変換
+
+```rust
+fn flip(c: &char) -> char {
+    ((*c as u8) ^ 32) as char
+}
+
+fn flip(c: &char) -> char {
+    if c.is_lowercase() {
+        c.to_ascii_uppercase()
+    } else if c.is_uppercase() {
+        c.to_ascii_lowercase()
+    } else {
+        unreachable!()
+    }
+}
+
+```
+
 ## HashMap
 ### entry API
 ```rust
