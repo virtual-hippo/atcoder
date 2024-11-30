@@ -255,6 +255,22 @@ assert_eq!(a.upper_bound(&15), 5);
 assert_eq!(a.upper_bound(&16), 5);
 ```
 
+
+
+### BTreeSet で lower bound 的なことをやりたいときに使うやつ
+```rs
+// https://stackoverflow.com/questions/48575866/how-to-get-the-lower-bound-and-upper-bound-of-an-element-in-a-btreeset
+use std::collections::BTreeSet;
+fn neighbors(tree: &BTreeSet<usize>, val: usize) -> (Option<&usize>, Option<&usize>) {
+    use std::ops::Bound::*;
+
+    let mut before = tree.range((Unbounded, Excluded(val)));
+    let mut after = tree.range((Excluded(val), Unbounded));
+
+    (before.next_back(), after.next())
+}
+```
+
 ## 数学
 ### 最大公約数
 ```rust
