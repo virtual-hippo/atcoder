@@ -1,0 +1,49 @@
+[package]
+name = "abc375"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc375-a = { alias = "a", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_a" }
+abc375-b = { alias = "b", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_b" }
+abc375-c = { alias = "c", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_c" }
+abc375-d = { alias = "d", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_d" }
+abc375-e = { alias = "e", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_e" }
+abc375-f = { alias = "f", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_f" }
+abc375-g = { alias = "g", problem = "https://atcoder.jp/contests/abc375/tasks/abc375_g" }
+
+[[bin]]
+name = "abc375-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc375-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc375-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc375-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc375-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc375-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc375-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+itertools = "0.13.0"
+
+[dev-dependencies]
