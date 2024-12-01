@@ -4,7 +4,6 @@ use proconio::{fastout, input, marker::Chars};
 use rand::Rng;
 use rand_distr::num_traits::float;
 use rand_distr::{Distribution, Normal};
-use std::usize;
 use std::{
     cmp::Ordering,
     collections::{HashMap, HashSet},
@@ -75,7 +74,28 @@ fn main() {
         n: usize,
         t: usize,
         sigma: usize,
-        wh: [(usize,usize); n],
+        mut wh: [(usize,usize); n],
+    }
+
+    let mut squares = wh
+        .iter()
+        .enumerate()
+        .map(|(i, (w, h))| Square { i, w: *w, h: *h })
+        .collect::<Vec<Square>>();
+    squares.sort();
+
+    let mut set = HashSet::new();
+    let cnt = if n < t { n } else { t - 1 };
+
+    for i in 0..cnt {
+        let prdbs = vec![Prdb {
+            p: squares[i].i,
+            r: 0,
+            d: U,
+            b: -1,
+        }];
+        wh[squares[i].i] = query(&prdbs);
+        set.insert(squares[i].i);
     }
 
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
@@ -83,28 +103,15 @@ fn main() {
         let mut ret = vec![];
         for i in 0..n {
             let (w, h) = wh[i];
-
-            // let normal = Normal::new((w + sigma / 2) as f64, sigma as f64).expect("#");
-            // let w = ((0..1000)
-            //     .map(|_| normal.sample(&mut rng))
-            //     .fold(f64::MIN, |a, b| a.max(b))
-            //     .ceil() as usize)
-            //     .min(1_000_000_000);
-
-            // let normal = Normal::new((h + sigma / 2) as f64, sigma as f64).expect("#");
-            // let h = ((0..1000)
-            //     .map(|_| normal.sample(&mut rng))
-            //     .fold(f64::MIN, |a, b| a.max(b))
-            //     .ceil() as usize)
-            //     .min(1_000_000_000);
+            if set.contains(&i) {
+                ret.push((w, h));
+                continue;
+            }
 
             let normal = Normal::new((w + sigma / 2) as f64, sigma as f64).expect("#");
             let w = (normal.sample(&mut rng).ceil() as usize).min(1_000_000_000);
             let normal = Normal::new((h + sigma / 2) as f64, sigma as f64).expect("#");
             let h = (normal.sample(&mut rng).ceil() as usize).min(1_000_000_000);
-
-            // let w = w + 5 * sigma;
-            // let h = h + 5 * sigma;
 
             ret.push((w, h));
         }
@@ -193,7 +200,7 @@ fn main() {
         }
     }
 
-    for _ in 0..t {
+    for _ in 0..(t - cnt) {
         query(&state.prdbs);
     }
 }
