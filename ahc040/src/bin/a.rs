@@ -83,20 +83,64 @@ fn main() {
         mut wh: [(i64,i64); n],
     }
 
-    // for i in 0..n {
-    //     wh[i].0 += sigma;
-    //     wh[i].1 += sigma;
-    // }
+    for i in 0..n {
+        wh[i].0 += sigma;
+        wh[i].1 += sigma;
+    }
+
+    // 実測値を求める
+    let mut set = HashSet::new();
+    let cnt = if n < t { n } else { t - 1 };
+    {
+        let mut squares = wh
+            .iter()
+            .enumerate()
+            .map(|(i, (w, h))| Square { i, w: *w, h: *h })
+            .collect::<Vec<Square>>();
+        squares.sort();
+
+        for i in 0..cnt {
+            let prdbs = vec![Prdb {
+                p: squares[i].i,
+                r: 0,
+                d: U,
+                b: -1,
+            }];
+            wh[squares[i].i] = query(&prdbs);
+            set.insert(squares[i].i);
+        }
+    }
+    let t = t - cnt;
+
+    // 実測値で上書きする
+    let wh = {
+        let mut ret = vec![];
+        for i in 0..n {
+            let (w, h) = wh[i];
+            if set.contains(&i) {
+                ret.push((w, h));
+                continue;
+            }
+            ret.push((w, h));
+        }
+        ret
+    };
 
     //let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
 
     for _ in 0..t {
-        let state = optimize(n, &wh, start_time, time_limit);
+        let state = optimize(n, &wh, start_time, time_limit, sigma);
         query(&state.prdbs);
     }
 }
 
-fn optimize(n: usize, wh: &Vec<(i64, i64)>, start_time: Instant, time_limit: Duration) -> State {
+fn optimize(
+    n: usize,
+    wh: &Vec<(i64, i64)>,
+    start_time: Instant,
+    time_limit: Duration,
+    sigma: i64,
+) -> State {
     let squares = wh
         .iter()
         .enumerate()
@@ -303,7 +347,7 @@ mod jikken {
     }
 }
 
-fn query(prdbs: &Vec<Prdb>) -> (usize, usize) {
+fn query(prdbs: &Vec<Prdb>) -> (i64, i64) {
     let mut stdin = LineSource::new(BufReader::new(io::stdin()));
     macro_rules! input(($($tt:tt)*) => (proconio::input!(from &mut stdin, $($tt)*)));
 
@@ -315,8 +359,8 @@ fn query(prdbs: &Vec<Prdb>) -> (usize, usize) {
         return (0, 0);
     } else {
         input! {
-            w: usize,
-            h: usize,
+            w: i64,
+            h: i64,
         }
         return (w, h);
     }
