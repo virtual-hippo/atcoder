@@ -80,22 +80,30 @@ fn main() {
         n: usize,
         t: usize,
         sigma: i64,
-        mut origin_wh: [(i64,i64); n],
+        mut wh: [(i64,i64); n],
     }
 
-    // For debug
     // for i in 0..n {
-    //     input! {
-    //         w: i64,
-    //         h: i64,
-    //     }
-    //     origin_wh[i].0 = w;
-    //     origin_wh[i].1 = h;
+    //     wh[i].0 += sigma;
+    //     wh[i].1 += sigma;
     // }
 
-    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    //let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
 
-    let sum_w_and_h: i64 = origin_wh.iter().map(|(w, h)| *w + *h).sum();
+    for _ in 0..t {
+        let state = optimize(n, &wh, start_time, time_limit);
+        query(&state.prdbs);
+    }
+}
+
+fn optimize(n: usize, wh: &Vec<(i64, i64)>, start_time: Instant, time_limit: Duration) -> State {
+    let squares = wh
+        .iter()
+        .enumerate()
+        .map(|(i, (w, h))| Square { i, w: *w, h: *h })
+        .collect::<Vec<Square>>();
+
+    let sum_w_and_h: i64 = wh.iter().map(|(w, h)| *w + *h).sum();
 
     let mut state = State {
         prdbs: vec![],
@@ -109,144 +117,97 @@ fn main() {
         bottom_each_square: vec![0; n],
     };
 
-    // for _ in 0..t {
-    for _ in 0..1 {
-        // let wh = {
-        //     let mut ret = vec![];
-        //     for i in 0..n {
-        //         let (w, h) = origin_wh[i];
+    // 初期構築
+    for p in 0..n {
+        if start_time.elapsed() >= time_limit {
+            break;
+        }
+        if let Some((prdb, best_score)) = jikken::execute(&mut state, &squares[p], p) {
+            let (w, h) = if prdb.r == NOT_ROTATE {
+                (squares[p].w, squares[p].h)
+            } else {
+                (squares[p].h, squares[p].w)
+            };
 
-        //         let normal = Normal::new((w) as f64, sigma as f64).expect("#");
-        //         let w = (normal.sample(&mut rng).ceil() as i64).min(1_000_000_000);
-        //         let normal = Normal::new((h) as f64, sigma as f64).expect("#");
-        //         let h = (normal.sample(&mut rng).ceil() as i64).min(1_000_000_000);
-
-        //         ret.push((w, h));
-        //     }
-        //     ret
-        // };
-
-        let squares = origin_wh
-            .iter()
-            .enumerate()
-            .map(|(i, (w, h))| Square { i, w: *w, h: *h })
-            .collect::<Vec<Square>>();
-
-        // 初期構築
-        {
-            for p in 0..n {
-                if start_time.elapsed() >= time_limit {
-                    break;
-                }
-                if let Some((prdb, best_score)) = jikken::execute(&mut state, &squares[p], p) {
-                    let (w, h) = if prdb.r == NOT_ROTATE {
-                        (squares[p].w, squares[p].h)
+            match prdb.d {
+                U => {
+                    let right = if prdb.b == -1 {
+                        0
                     } else {
-                        (squares[p].h, squares[p].w)
+                        state.right_each_square[prdb.b as usize]
                     };
 
-                    match prdb.d {
-                        U => {
-                            let right = if prdb.b == -1 {
-                                0
-                            } else {
-                                state.right_each_square[prdb.b as usize]
-                            };
+                    let (l, r) = (right, right + w);
 
-                            let (l, r) = (right, right + w);
+                    let now_bottom = state.x_tree.query(0, MAX_RANGE, l, r - 1);
+                    let updated_bottom = now_bottom + h as i64;
+                    state
+                        .x_tree
+                        .update(0, MAX_RANGE, l, r - 1, now_bottom + h as i64);
 
-                            let now_bottom = state.x_tree.query(0, MAX_RANGE, l, r - 1);
-                            let updated_bottom = now_bottom + h as i64;
-                            state
-                                .x_tree
-                                .update(0, MAX_RANGE, l, r - 1, now_bottom + h as i64);
+                    state
+                        .y_tree
+                        .update(0, MAX_RANGE, state.bottom, updated_bottom - 1, r);
+                    state
+                        .y_tree
+                        .update(0, MAX_RANGE, updated_bottom - 1000, updated_bottom - 1, r);
 
-                            let y_tree_max =
-                                state
-                                    .y_tree
-                                    .query(0, MAX_RANGE, now_bottom, updated_bottom - 1);
-
-                            // 新しい右端が超えていた場合は更新する
-                            if y_tree_max < r {
-                                state.y_tree.update(
-                                    0,
-                                    MAX_RANGE,
-                                    now_bottom,
-                                    updated_bottom - 1,
-                                    r,
-                                );
-                            }
-
-                            state.bottom = state.bottom.max(updated_bottom);
-                            state.right = state.right.max(r as i64);
-                            state.right_each_square[p] = r;
-                            state.bottom_each_square[p] = updated_bottom;
-                        }
-                        L => {
-                            let bottom = if prdb.b == -1 {
-                                0
-                            } else {
-                                state.bottom_each_square[prdb.b as usize]
-                            };
-
-                            let (l, r) = (bottom, bottom + h);
-
-                            let now_right = state.y_tree.query(0, MAX_RANGE, l, r - 1);
-                            // 更新対象区間についての更新後の右端
-                            let updated_right = now_right + w as i64;
-                            state
-                                .y_tree
-                                .update(0, MAX_RANGE, l, r - 1, now_right + w as i64);
-
-                            let x_tree_max =
-                                state
-                                    .x_tree
-                                    .query(0, MAX_RANGE, now_right, updated_right - 1);
-
-                            // 新しい下端が超えていた場合は更新する
-                            if x_tree_max < r {
-                                state
-                                    .x_tree
-                                    .update(0, MAX_RANGE, now_right, updated_right - 1, r);
-                            }
-
-                            state.right = state.right.max(updated_right);
-                            state.bottom = state.bottom.max(r as i64);
-                            state.bottom_each_square[p] = r;
-                            state.right_each_square[p] = updated_right;
-                        }
-                        _ => unreachable!(),
-                    }
-
-                    state.prdbs.push(prdb);
-                    state.prdbs_p.push(p);
-                    state.score = best_score;
-                    query(&state.prdbs);
-
-                    println!(
-                        "# turn: {} W: {} H: {} state.x_tree.query: {} state.y_tree.query: {}",
-                        p + 1,
-                        state.right,
-                        state.bottom,
-                        state.x_tree.query(0, MAX_RANGE, 0, 98044),
-                        state.y_tree.query(0, MAX_RANGE, 150140, 212221),
-                    );
+                    state.bottom = state.bottom.max(updated_bottom);
+                    state.right = state.right.max(r as i64);
+                    state.right_each_square[p] = r;
+                    state.bottom_each_square[p] = updated_bottom;
                 }
+                L => {
+                    let bottom = if prdb.b == -1 {
+                        0
+                    } else {
+                        state.bottom_each_square[prdb.b as usize]
+                    };
+
+                    let (l, r) = (bottom, bottom + h);
+
+                    let now_right = state.y_tree.query(0, MAX_RANGE, l, r - 1);
+                    // 更新対象区間についての更新後の右端
+                    let updated_right = now_right + w as i64;
+                    state
+                        .y_tree
+                        .update(0, MAX_RANGE, l, r - 1, now_right + w as i64);
+
+                    state
+                        .x_tree
+                        .update(0, MAX_RANGE, now_right, updated_right - 1, r);
+                    state
+                        .x_tree
+                        .update(0, MAX_RANGE, updated_right - 1000, updated_right - 1, r);
+
+                    state.right = state.right.max(updated_right);
+                    state.bottom = state.bottom.max(r as i64);
+                    state.bottom_each_square[p] = r;
+                    state.right_each_square[p] = updated_right;
+                }
+                _ => unreachable!(),
+            }
+
+            state.prdbs.push(prdb);
+            state.prdbs_p.push(p);
+            state.score = best_score;
+            if cfg!(debug_assertions) {
+                query(&state.prdbs);
+
+                println!(
+                            "# p: {} W: {} H: {} state.x_tree.query: {} state.y_tree.query: {} state.bottom_each_square[p]: {} state.right_each_square[p]: {}",
+                            p,
+                            state.right,
+                            state.bottom,
+                            state.x_tree.query(0, MAX_RANGE, 175234, 216115),
+                            state.y_tree.query(0, MAX_RANGE, 323813, 334585),
+                            state.bottom_each_square[p],
+                            state.right_each_square[p],
+                        );
             }
         }
-        query(&state.prdbs);
-        State {
-            prdbs: vec![],
-            prdbs_p: vec![],
-            right: 0,
-            bottom: 0,
-            x_tree: ahc040_lib::SegmentTree::new(),
-            y_tree: ahc040_lib::SegmentTree::new(),
-            score: sum_w_and_h,
-            right_each_square: vec![0; n],
-            bottom_each_square: vec![0; n],
-        };
     }
+    return state;
 }
 
 mod jikken {
@@ -350,12 +311,15 @@ fn query(prdbs: &Vec<Prdb>) -> (usize, usize) {
     for prdb in prdbs.iter() {
         println!("{} {} {} {}", prdb.p, prdb.r, prdb.d, prdb.b);
     }
-    // input! {
-    //     w: usize,
-    //     h: usize,
-    // }
-    // return (w, h);
-    return (0, 0);
+    if cfg!(debug_assertions) {
+        return (0, 0);
+    } else {
+        input! {
+            w: usize,
+            h: usize,
+        }
+        return (w, h);
+    }
 }
 
 mod ahc040_lib {
@@ -380,15 +344,17 @@ mod ahc040_lib {
         /// 遅延値を適用
         fn push(&mut self, start: i64, end: i64) {
             if let Some(value) = self.lazy {
-                self.max = value; // 現在のノードの値を置換
-                if start != end {
-                    // 葉ノードでない場合
-                    self.left
-                        .get_or_insert_with(|| Box::new(SegmentTree::new()))
-                        .lazy = Some(value);
-                    self.right
-                        .get_or_insert_with(|| Box::new(SegmentTree::new()))
-                        .lazy = Some(value);
+                if value > self.max {
+                    self.max = value;
+                    if start != end {
+                        // 葉ノードでない場合
+                        self.left
+                            .get_or_insert_with(|| Box::new(SegmentTree::new()))
+                            .lazy = Some(value);
+                        self.right
+                            .get_or_insert_with(|| Box::new(SegmentTree::new()))
+                            .lazy = Some(value);
+                    }
                 }
                 self.lazy = None; // 遅延値をクリア
             }
@@ -404,8 +370,11 @@ mod ahc040_lib {
             }
             if l <= start && end <= r {
                 // 現在の区間が完全に含まれる場合
-                self.lazy = Some(value); // 遅延値を設定
-                self.push(start, end); // 適用
+                if value > self.max {
+                    // 現在の最大値より大きい場合のみ更新
+                    self.lazy = Some(value);
+                    self.push(start, end);
+                }
                 return;
             }
             let mid = (start + end) / 2;
