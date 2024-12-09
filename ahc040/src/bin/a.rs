@@ -88,6 +88,13 @@ fn main() {
         wh[i].1 += sigma;
     }
 
+    // とりあえず 1 度出力する
+    {
+        let state = optimize(n, &wh, start_time, time_limit, sigma);
+        query(&state.prdbs);
+    }
+    let t = t - 1;
+
     // 実測値を求める
     let mut set = HashSet::new();
     let cnt = if n < t { n } else { t - 1 };
@@ -192,9 +199,13 @@ fn optimize(
                     state
                         .y_tree
                         .update(0, MAX_RANGE, state.bottom, updated_bottom - 1, r);
-                    state
-                        .y_tree
-                        .update(0, MAX_RANGE, updated_bottom - 1000, updated_bottom - 1, r);
+                    state.y_tree.update(
+                        0,
+                        MAX_RANGE,
+                        updated_bottom - sigma,
+                        updated_bottom - 1,
+                        r,
+                    );
 
                     state.bottom = state.bottom.max(updated_bottom);
                     state.right = state.right.max(r as i64);
@@ -222,7 +233,7 @@ fn optimize(
                         .update(0, MAX_RANGE, now_right, updated_right - 1, r);
                     state
                         .x_tree
-                        .update(0, MAX_RANGE, updated_right - 1000, updated_right - 1, r);
+                        .update(0, MAX_RANGE, updated_right - sigma, updated_right - 1, r);
 
                     state.right = state.right.max(updated_right);
                     state.bottom = state.bottom.max(r as i64);
