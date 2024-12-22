@@ -23,15 +23,18 @@ test-suite = "{{ manifest_dir }}/testcases/{{ bin_alias }}.yml"
 [template]
 src = '''
 #![allow(unused_imports)]
-use ac_library::FenwickTree;
+use ac_library::*;
+use itertools::*;
 use proconio::{fastout, input, marker::Chars};
-use std::collections::{HashSet, HashMap};
+use rustc_hash::{FxHashSet, FxHashMap};
+use superslice::Ext;
 
 #[fastout]
 fn main() {
     input! {
         n: usize,
     }
+
     let ans = 0;
     println!("{}", ans);
 }
@@ -52,7 +55,8 @@ dependencies = '''
 proconio = { version = "=0.4.5", features = ["derive"] }
 ac-library-rs = "=0.1.1"
 superslice = "1.0.0"
-itertools = "0.13.0"
+itertools = "=0.11.0"
+rustc-hash = "=1.1.0"
 '''
 dev-dependencies = '''
 #atcoder-202004-lock = { git = "https://github.com/qryxip/atcoder-202004-lock" }
