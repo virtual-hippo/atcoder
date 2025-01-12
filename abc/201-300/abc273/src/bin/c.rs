@@ -1,45 +1,25 @@
-use proconio::input;
-use std::collections::HashSet;
-
-pub fn binary_search<F: Fn(usize) -> bool>(
-    initial_pos: (usize, usize),
-    is_ok: F,
-) -> (usize, usize) {
-    let mut left = initial_pos.0;
-    let mut right = initial_pos.1;
-
-    while right - left > 1 {
-        let mid = (left + right) / 2;
-        if is_ok(mid) {
-            left = mid;
-        } else {
-            right = mid;
-        }
-    }
-    (left, right)
-}
+#![allow(unused_imports)]
+use ac_library::*;
+use itertools::*;
+use proconio::{fastout, input, marker::Chars};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, VecDeque};
+use superslice::Ext;
 
 fn main() {
     input! {
         n: usize,
         a: [usize; n],
     }
-    let mut set =  HashSet::new();
+    let mut map = BTreeMap::new();
     for i in 0..n {
-        set.insert(a[i]);
-    }
-    let mut sorted_a = set.iter().map(|&v|v).collect::<Vec<usize>>();
-    sorted_a.sort();
-    let mut cnt = vec![0; n];
-
-    for &target in a.iter() {
-        let is_ok = |x: usize| sorted_a[x] <= target;
-        let result = binary_search((0, sorted_a.len()), is_ok);
-        cnt[sorted_a.len()-result.1] += 1;
+        *map.entry(Reverse(a[i])).or_insert(0) += 1;
     }
 
-    for k in 0..n {
-        println!("{}", cnt[k]);
-    }
+    map.iter().for_each(|(_, v)| println!("{}", v));
+
+    (map.len()..n).for_each(|_| {
+        println!("{}", 0);
+    });
 }
-
