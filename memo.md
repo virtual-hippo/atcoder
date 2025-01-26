@@ -209,6 +209,32 @@ fn is_triangle(p1: (i64, i64), p2: (i64, i64), p3: (i64, i64)) -> bool {
 ```
 
 ## 探索系
+### ベル数
+```rust
+/// [ABC390 D - Stone XOR](https://atcoder.jp/contests/abc390/tasks/abc390_d)
+
+fn dfs(a: &Vec<usize>, i: usize, groups: &mut Vec<Vec<usize>>) {
+    if i == a.len() {
+        // グループ分け後の処理
+        return;
+    }
+
+    // 各グループに a[i] を入れてから潜る
+    for j in 0..groups.len() {
+        groups[j].push(i);
+
+        dfs(a, i + 1, groups);
+
+        groups[j].pop();
+    }
+
+    // グループを追加してから潜る
+    groups.push(vec![i]);
+    dfs(a, i + 1, groups);
+    groups.pop();
+}
+```
+
 ### bit全探索
 ```rust
 for bit in 0..(1<<n) {
