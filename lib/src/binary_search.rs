@@ -4,7 +4,7 @@ pub fn binary_search<F: Fn(i64) -> bool>(initial_pos: (i64, i64), is_ok: F) -> (
     let mut left = initial_pos.0;
     let mut right = initial_pos.1;
 
-    while right - left > 1 {
+    while left + 1 < right {
         let mid = (left + right) / 2;
         if is_ok(mid) {
             left = mid;
@@ -12,6 +12,7 @@ pub fn binary_search<F: Fn(i64) -> bool>(initial_pos: (i64, i64), is_ok: F) -> (
             right = mid;
         }
     }
+
     (left, right)
 }
 
