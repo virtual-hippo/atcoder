@@ -12,6 +12,17 @@ use itertools::Itertools; // p.iter().permutations(n)
 use regex::Regex; // ←あまり使わん
 ```
 
+## usize
+### saturating_sub: ゼロにクリップして減算する
+```rust
+    let a: usize = 5;
+    let b: usize = 10;
+
+    let result = a.saturating_sub(b);
+    println!("Result: {}", result); // 0
+```
+saturating_sub
+
 ## cast 系
 ### char to num
 ```rust
