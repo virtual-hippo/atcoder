@@ -6,6 +6,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::VecDeque;
 use superslice::Ext;
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
@@ -13,26 +14,10 @@ fn main() {
         s: [Chars; n],
         t: [Chars; m],
     }
-    for i in 0..n - m + 1 {
-        for j in 0..n - m + 1 {
-            let mut flag = true;
 
-            for ii in 0..m {
-                for jj in 0..m {
-                    if s[i + ii][j + jj] != t[ii][jj] {
-                        flag = false;
-                        break;
-                    }
-                }
+    let ans = iproduct!(0..n - m + 1, 0..n - m + 1)
+        .find(|&(a, b)| iproduct!(0..m, 0..m).all(|(i, j)| s[a + i][b + j] == t[i][j]))
+        .expect("No matching submatrix found");
 
-                if !flag {
-                    break;
-                }
-            }
-            if flag {
-                println!("{} {}", i + 1, j + 1);
-                return;
-            }
-        }
-    }
+    println!("{} {}", ans.0 + 1, ans.1 + 1);
 }
