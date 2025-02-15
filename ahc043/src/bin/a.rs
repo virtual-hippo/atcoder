@@ -309,25 +309,39 @@ impl Solver {
         total
     }
 
-    fn build_rail(&mut self, building: &Building, Pos(r, c): Pos) {
+    fn build_rail(&mut self, building: &Building, Pos(r, c): Pos) -> Result<(), ()> {
+        if self.money < COST_RAIL {
+            return Err(());
+        }
         self.field.build(building, Pos(r, c));
         self.money -= COST_RAIL;
         self.actions
             .push(Action::Build((building.clone(), Pos(r, c))));
+        Ok(())
     }
 
-    fn build_station(&mut self, Pos(r, c): Pos) {
+    fn build_station(&mut self, Pos(r, c): Pos) -> Result<(), ()> {
+        if self.money < COST_RAIL {
+            return Err(());
+        }
         self.field.build(&Building::Station, Pos(r, c));
         self.money -= COST_STATION;
         self.actions
             .push(Action::Build((Building::Station, Pos(r, c))));
+        Ok(())
     }
 
     fn build_nothing(&mut self) {
         self.actions.push(Action::DoNothing);
     }
 
-    fn solve(&mut self) -> Answer {
+    fn replace_do_nothing(&mut self, start_idx: usize) {
+        for i in start_idx..self.actions.len() {
+            self.actions[i] = Action::DoNothing;
+        }
+    }
+
+    fn prosess_one(&mut self) -> Result<(), ()> {
         // 接続する人を見つける
         let pi = {
             let rail_count = (self.k as i32) - COST_STATION * 2;
@@ -343,8 +357,8 @@ impl Solver {
         debug_assert_ne!(pi, self.m);
 
         // 接続する人の家に駅を建てる
-        self.build_station(self.home[pi]);
-        self.build_station(self.workspace[pi]);
+        self.build_station(self.home[pi])?;
+        self.build_station(self.workspace[pi])?;
 
         // 接続する人の家と駅を結ぶ
         let pos0 = self.home[pi];
@@ -355,26 +369,26 @@ impl Solver {
             if pos0.0 < pos1.0 {
                 // 垂直のレールを建てる
                 for r in pos0.0 + 1..pos1.0 {
-                    self.build_rail(&Building::VerticalRail, Pos(r, pos0.1));
+                    self.build_rail(&Building::VerticalRail, Pos(r, pos0.1))?;
                 }
 
                 // ゴールへ向けて曲がったレールを建てる
                 if pos0.1 < pos1.1 {
-                    self.build_rail(&Building::RightUpRail, Pos(pos1.0, pos0.1));
+                    self.build_rail(&Building::RightUpRail, Pos(pos1.0, pos0.1))?;
                 } else if pos0.1 > pos1.1 {
-                    self.build_rail(&Building::LeftUpRail, Pos(pos1.0, pos0.1));
+                    self.build_rail(&Building::LeftUpRail, Pos(pos1.0, pos0.1))?;
                 }
             } else if pos0.0 > pos1.0 {
                 // 垂直のレールを建てる
                 for r in (pos1.0 + 1)..pos0.0 {
-                    self.build_rail(&Building::VerticalRail, Pos(r, pos0.1));
+                    self.build_rail(&Building::VerticalRail, Pos(r, pos0.1))?;
                 }
 
                 // ゴールへ向けて曲がったレールを建てる
                 if pos0.1 < pos1.1 {
-                    self.build_rail(&Building::RightDownRail, Pos(pos1.0, pos0.1));
+                    self.build_rail(&Building::RightDownRail, Pos(pos1.0, pos0.1))?;
                 } else if pos0.1 > pos1.1 {
-                    self.build_rail(&Building::LeftDownRail, Pos(pos1.0, pos0.1));
+                    self.build_rail(&Building::LeftDownRail, Pos(pos1.0, pos0.1))?;
                 }
             }
         }
@@ -384,23 +398,38 @@ impl Solver {
             // 水平のレールを建てる
             if pos0.1 < pos1.1 {
                 for c in pos0.1 + 1..pos1.1 {
-                    self.build_rail(&Building::HorizontalRail, Pos(pos1.0, c));
+                    self.build_rail(&Building::HorizontalRail, Pos(pos1.0, c))?;
                 }
             }
             // 水平のレールを建てる
             else if pos0.1 > pos1.1 {
                 for c in (pos1.1 + 1)..pos0.1 {
-                    self.build_rail(&Building::HorizontalRail, Pos(pos1.0, c));
+                    self.build_rail(&Building::HorizontalRail, Pos(pos1.0, c))?;
                 }
             }
         }
+        Ok(())
+    }
 
-        let income = self.calc_income();
-        self.money += income;
-
+    fn solve(&mut self) -> Answer {
+        let mut income = 0;
         while self.actions.len() < self.t {
-            self.build_nothing();
+            let start_idx = self.actions.len();
+            if self.actions.len() == 0 {
+                if self.prosess_one().is_err() {
+                    self.replace_do_nothing(start_idx);
+                }
+                income = self.calc_income();
+            } else {
+                self.build_nothing();
+            }
             self.money += income;
+        }
+
+        debug_assert!(self.actions.len() <= self.t);
+        // もしターン数を超えてしまっていたら取り除く
+        while self.actions.len() > self.t {
+            self.actions.pop();
         }
 
         Answer::new(&self.actions, self.money)
