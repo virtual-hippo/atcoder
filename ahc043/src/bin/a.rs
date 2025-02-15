@@ -279,6 +279,8 @@ struct Solver {
     t: usize,
     home: Vec<Pos>,
     workspace: Vec<Pos>,
+    distance: Vec<i32>,
+    is_connected: Vec<bool>,
     field: Field,
     money: i32,
     actions: Vec<Action>,
@@ -293,26 +295,34 @@ impl Solver {
             t,
             home: Vec::with_capacity(m),
             workspace: Vec::with_capacity(m),
+            distance: Vec::with_capacity(m),
+            is_connected: Vec::with_capacity(m),
             field: Field::new(n),
             money: k as i32,
             actions: Vec::with_capacity(t),
         }
     }
 
-    fn calc_income(&mut self) -> i32 {
-        let mut total = 0;
+    fn update_is_connected(&mut self) {
         for i in 0..self.m {
-            if self.field.is_connected(self.home[i], self.workspace[i]) {
-                total += calc_distance(self.home[i], self.workspace[i]);
+            if !self.is_connected[i] && self.field.is_connected(self.home[i], self.workspace[i]) {
+                self.is_connected[i] = true;
             }
         }
-        total
+    }
+
+    fn calc_income(&mut self) -> i32 {
+        (0..self.m)
+            .filter(|&i| self.is_connected[i])
+            .map(|i| self.distance[i])
+            .sum()
     }
 
     fn build_rail(&mut self, building: &Building, Pos(r, c): Pos) -> Result<(), ()> {
         if self.money < COST_RAIL {
             return Err(());
         }
+
         self.field.build(building, Pos(r, c));
         self.money -= COST_RAIL;
         self.actions
@@ -408,6 +418,8 @@ impl Solver {
                 }
             }
         }
+        self.update_is_connected();
+
         Ok(())
     }
 
@@ -416,7 +428,8 @@ impl Solver {
         while self.actions.len() < self.t {
             let start_idx = self.actions.len();
             if self.actions.len() == 0 {
-                if self.prosess_one().is_err() {
+                let result_process = self.prosess_one();
+                if result_process.is_err() {
                     self.replace_do_nothing(start_idx);
                 }
                 income = self.calc_income();
@@ -457,12 +470,17 @@ fn main() {
                 i: usize,
                 j: usize,
             }
-            solver.home.push(Pos(i, j));
+            let home_i = Pos(i, j);
             input! {
                 i: usize,
                 j: usize,
             }
-            solver.workspace.push(Pos(i, j));
+            let workspace_i = Pos(i, j);
+
+            solver.home.push(home_i);
+            solver.workspace.push(workspace_i);
+            solver.distance.push(calc_distance(home_i, workspace_i));
+            solver.is_connected.push(false);
         }
     }
 
