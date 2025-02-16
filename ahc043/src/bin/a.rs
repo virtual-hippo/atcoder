@@ -3,6 +3,7 @@ use proconio::{fastout, input};
 use std::{
     i64,
     time::{Duration, Instant},
+    vec,
 };
 
 const COST_STATION: i64 = 5000;
@@ -16,7 +17,7 @@ struct UnionFind {
     /// 親頂点の番号
     parents: Vec<usize>,
     /// 連結成分の頂点の個数
-    siz: Vec<usize>,
+    sizes: Vec<usize>,
 }
 
 impl UnionFind {
@@ -24,36 +25,43 @@ impl UnionFind {
         Self {
             n,
             parents: vec![usize::MAX; n * n],
-            siz: vec![1; n * n],
+            sizes: vec![1; n * n],
         }
+    }
+
+    fn pos_to_index(&self, pos: Pos) -> usize {
+        pos.0 * self.n + pos.1
     }
 
     fn find_root(&mut self, idx: usize) -> usize {
         if self.parents[idx] == usize::MAX {
             return idx;
         }
-        self.parents[idx] = self.find_root(self.parents[idx]);
-        self.parents[idx]
+        let root = self.find_root(self.parents[idx]);
+        self.parents[idx] = root;
+        root
     }
 
     fn is_same(&mut self, p: Pos, q: Pos) -> bool {
-        let p_idx = p.0 * self.n + p.1;
-        let q_idx = q.0 * self.n + q.1;
+        let p_idx = self.pos_to_index(p);
+        let q_idx = self.pos_to_index(q);
         self.find_root(p_idx) == self.find_root(q_idx)
     }
 
     fn unite(&mut self, p: Pos, q: Pos) {
-        let p_idx = p.0 * self.n + p.1;
-        let q_idx = q.0 * self.n + q.1;
+        let p_idx = self.pos_to_index(p);
+        let q_idx = self.pos_to_index(q);
         let p_root = self.find_root(p_idx);
         let q_root = self.find_root(q_idx);
 
-        if self.siz[p_root] < self.siz[q_root] {
-            self.parents[p_root] = q_root;
-            self.siz[q_root] += self.siz[p_root];
-        } else {
-            self.parents[q_root] = p_root;
-            self.siz[p_root] += self.siz[q_root];
+        if p_root != q_root {
+            if self.sizes[p_root] < self.sizes[q_root] {
+                self.parents[p_root] = q_root;
+                self.sizes[q_root] += self.sizes[p_root];
+            } else {
+                self.parents[q_root] = p_root;
+                self.sizes[p_root] += self.sizes[q_root];
+            }
         }
     }
 }
@@ -327,13 +335,14 @@ enum SolverError {
 }
 
 struct Solver {
-    _n: usize,
+    n: usize,
     m: usize,
     k: usize,
     t: usize,
     home: Vec<Pos>,
     workspace: Vec<Pos>,
     distance: Vec<i64>,
+    distance_sorted: Vec<usize>,
     is_connected: Vec<bool>,
     field: Field,
     money: i64,
@@ -353,7 +362,7 @@ impl Solver {
         start_time: Instant,
     ) -> Self {
         Self {
-            _n: n,
+            n,
             m,
             k,
             t,
@@ -363,6 +372,7 @@ impl Solver {
             home: Vec::with_capacity(m),
             workspace: Vec::with_capacity(m),
             distance: Vec::with_capacity(m),
+            distance_sorted: Vec::with_capacity(m),
             is_connected: Vec::with_capacity(m),
             field: Field::new(n),
             money: k as i64,
@@ -387,7 +397,7 @@ impl Solver {
 
     fn build_rail(&mut self, building: &Building, Pos(r, c): Pos) -> Result<(), SolverError> {
         if self.money < COST_RAIL {
-            return Err(SolverError::NotEnoughMoney(COST_RAIL - self.money));
+            return Err(SolverError::NotEnoughMoney(COST_RAIL));
         }
         if self.actions.len() >= self.t {
             return Err(SolverError::TooManyActions);
@@ -402,13 +412,47 @@ impl Solver {
         self.money -= COST_RAIL;
         self.actions
             .push(Action::Build((building.clone(), Pos(r, c))));
-        self.money += self.income;
+
+        if r > 0 {
+            if let Some(exisiting) = self.field.fields[r - 1][c].as_ref() {
+                if exisiting.is_station() && building.is_up() {
+                    self.update_is_connected();
+                    self.income = self.calc_income();
+                }
+            }
+        }
+        if r < self.n - 1 {
+            if let Some(exisiting) = self.field.fields[r + 1][c].as_ref() {
+                if exisiting.is_station() && building.is_down() {
+                    self.update_is_connected();
+                    self.income = self.calc_income();
+                }
+            }
+        }
+        if c > 0 {
+            if let Some(exisiting) = self.field.fields[r][c - 1].as_ref() {
+                if exisiting.is_station() && building.is_left() {
+                    self.update_is_connected();
+                    self.income = self.calc_income();
+                }
+            }
+        }
+        if c < self.n - 1 {
+            if let Some(exisiting) = self.field.fields[r][c + 1].as_ref() {
+                if exisiting.is_station() && building.is_right() {
+                    self.update_is_connected();
+                    self.income = self.calc_income();
+                }
+            }
+        }
+
+        self.collect_money();
         Ok(())
     }
 
     fn build_station(&mut self, Pos(r, c): Pos) -> Result<(), SolverError> {
         if self.money < COST_STATION {
-            return Err(SolverError::NotEnoughMoney(COST_STATION - self.money));
+            return Err(SolverError::NotEnoughMoney(COST_STATION));
         }
         if self.actions.len() >= self.t {
             return Err(SolverError::TooManyActions);
@@ -423,67 +467,37 @@ impl Solver {
 
         self.field.build(&Building::Station, Pos(r, c));
         self.money -= COST_STATION;
+
         self.actions
             .push(Action::Build((Building::Station, Pos(r, c))));
-        self.money += self.income;
+
+        self.update_is_connected();
+        self.income = self.calc_income();
+
+        self.collect_money();
         Ok(())
     }
 
-    fn build_nothing(&mut self) {
+    fn buildnothing(&mut self) -> Result<(), SolverError> {
         if self.actions.len() >= self.t {
-            return;
+            return Err(SolverError::TooManyActions);
         }
         self.actions.push(Action::DoNothing);
+        self.collect_money();
+        Ok(())
+    }
+
+    fn collect_money(&mut self) {
         self.money += self.income;
     }
 
-    fn _replace_do_nothing(&mut self, start_idx: usize) {
+    fn _replace_donothing(&mut self, start_idx: usize) {
         for i in start_idx..self.actions.len() {
             self.actions[i] = Action::DoNothing;
         }
     }
 
-    fn connect_home_and_workspace(&mut self) -> Result<(), SolverError> {
-        println!(
-            "# actions.len={},self.money={},",
-            self.actions.len(),
-            self.money
-        );
-
-        // 接続する人を見つける
-        let pi = {
-            // 作れるレールの数
-            let rail_count = (self.k as i64) - COST_STATION * 2;
-            let mut husoku_rail_count = i64::MAX;
-
-            let mut pi = 0;
-            while pi < self.m {
-                if self.is_connected[pi] {
-                    pi += 1;
-                    continue;
-                }
-                if self.distance[pi] - 1 <= rail_count {
-                    break;
-                } else {
-                    husoku_rail_count = husoku_rail_count.min(self.distance[pi] - 1 - rail_count);
-                }
-                pi += 1;
-            }
-
-            if pi == self.m {
-                return Err(SolverError::NotEnoughMoney(husoku_rail_count * COST_RAIL));
-            }
-            pi
-        };
-
-        // 接続する人の家に駅を建てる
-        self.build_station(self.home[pi])?;
-        self.build_station(self.workspace[pi])?;
-
-        // 接続する人の家と駅を結ぶ
-        let pos0 = self.home[pi];
-        let pos1 = self.workspace[pi];
-
+    fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
         // pos0 -> pos1 への垂直のレールを建てる
@@ -577,10 +591,60 @@ impl Solver {
                 }
             }
         }
-        self.update_is_connected();
-        self.income = self.calc_income();
 
         Ok(())
+    }
+
+    fn connect_home_and_workspace(&mut self, pi: usize) -> Result<(), SolverError> {
+        println!(
+            "# actions.len={}, self.money={}, self.income={}",
+            self.actions.len(),
+            self.money,
+            self.income
+        );
+
+        // 接続する人の家と駅を結ぶ
+        let pos0 = self.home[pi];
+        let pos1 = self.workspace[pi];
+
+        self.connect_points(pos0, pos1)?;
+
+        // 接続する人の家に駅を建てる
+        self.build_station(self.home[pi])?;
+        self.build_station(self.workspace[pi])?;
+
+        Ok(())
+    }
+
+    fn select_pi(&mut self) -> Result<usize, SolverError> {
+        // 作れるレールの数
+        let rail_count = (self.k as i64) - COST_STATION * 2;
+        let mut husoku_rail_count = (self.n * self.n) as i64;
+
+        let mut i = 0;
+
+        while i < self.m {
+            let pi = i;
+            if self.is_connected[pi] {
+                i += 1;
+                continue;
+            }
+
+            if self.distance[pi] - 1 <= rail_count {
+                break;
+            } else {
+                husoku_rail_count = husoku_rail_count.min(self.distance[pi] - 1 - rail_count);
+            }
+            i += 1;
+        }
+
+        if i == self.m {
+            debug_assert!(husoku_rail_count > 0);
+            return Err(SolverError::NotEnoughMoney(husoku_rail_count * COST_RAIL));
+        }
+
+        // self.distance_sorted[i];
+        Ok(i)
     }
 
     fn solve(&mut self) -> Answer {
@@ -589,16 +653,22 @@ impl Solver {
                 break;
             }
 
-            let result_connect = self.connect_home_and_workspace();
+            let result_connect = match self.select_pi() {
+                Ok(pi) => self.connect_home_and_workspace(pi),
+                Err(err) => Err(err),
+            };
+
             match result_connect {
                 Ok(_) => {}
                 Err(SolverError::NotEnoughMoney(cost)) => {
-                    eprintln!("NotEnoughMoney cost={}", cost);
                     while self.actions.len() < self.t && self.money < cost {
-                        self.build_nothing();
+                        if let Err(SolverError::TooManyActions) = self.buildnothing() {
+                            break;
+                        }
                     }
                 }
                 Err(SolverError::TooManyActions) => {
+                    eprintln!("#TooManyActions");
                     break;
                 }
             }
@@ -612,7 +682,9 @@ impl Solver {
 
         // もしターン数を超えていない場合はDoNothingを追加
         while self.actions.len() < self.t {
-            self.build_nothing();
+            if let Err(SolverError::TooManyActions) = self.buildnothing() {
+                break;
+            }
         }
 
         Answer::new(&self.actions, self.money)
@@ -655,15 +727,23 @@ fn main() {
             solver.distance.push(calc_distance(home_i, workspace_i));
             solver.is_connected.push(false);
         }
+
+        solver.distance_sorted = (0..m)
+            .map(|i| (solver.distance[i], i))
+            .sorted()
+            .map(|(_, i)| i)
+            .collect();
     }
 
     let ans = solver.solve();
-    if ans.score > k as i64 {
-        println!("{}", ans.to_string());
-    } else {
-        for _ in 0..t {
-            println!("-1");
-        }
-    }
+    println!("{}", ans.to_string());
+
+    // if ans.score > k as i64 {
+    //     println!("{}", ans.to_string());
+    // } else {
+    //     for _ in 0..t {
+    //         println!("-1");
+    //     }
+    // }
     eprintln!("#score={}", ans.score);
 }
