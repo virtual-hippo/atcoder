@@ -12,6 +12,7 @@ const COST_RAIL: i64 = 100;
 #[derive(Clone, Copy, Debug)]
 struct Pos(usize, usize);
 
+#[derive(Clone)]
 struct UnionFind {
     n: usize,
     /// 親頂点の番号
@@ -153,6 +154,7 @@ impl Building {
     }
 }
 
+#[derive(Clone)]
 enum Action {
     DoNothing,
     Build((Building, Pos)),
@@ -169,6 +171,7 @@ impl Action {
     }
 }
 
+#[derive(Clone)]
 struct Answer<'a> {
     actions: &'a Vec<Action>,
     score: i64,
@@ -184,6 +187,7 @@ impl<'a> Answer<'a> {
     }
 }
 
+#[derive(Clone)]
 struct Field {
     n: usize,
     fields: Vec<Vec<Option<Building>>>,
@@ -334,6 +338,7 @@ enum SolverError {
     TooManyActions,
 }
 
+#[derive(Clone)]
 struct Solver {
     n: usize,
     m: usize,
@@ -347,27 +352,16 @@ struct Solver {
     field: Field,
     money: i64,
     actions: Vec<Action>,
-    time_limit: Duration,
-    start_time: Instant,
     income: i64,
 }
 
 impl Solver {
-    fn new(
-        n: usize,
-        m: usize,
-        k: usize,
-        t: usize,
-        time_limit: Duration,
-        start_time: Instant,
-    ) -> Self {
+    fn new(n: usize, m: usize, k: usize, t: usize) -> Self {
         Self {
             n,
             m,
             k,
             t,
-            time_limit,
-            start_time,
             income: 0,
             home: Vec::with_capacity(m),
             workspace: Vec::with_capacity(m),
@@ -647,14 +641,14 @@ impl Solver {
         Ok(i)
     }
 
-    fn solve(&mut self) -> Answer {
-        while self.actions.len() < self.t {
-            if self.start_time.elapsed() >= self.time_limit {
+    fn solve(&mut self, time_limit: &Duration, start_time: &Instant, pi: usize) -> Answer {
+        while self.actions.len() == 0 && self.actions.len() < self.t {
+            if start_time.elapsed() >= *time_limit {
                 break;
             }
 
             let result_connect = match self.select_pi() {
-                Ok(pi) => self.connect_home_and_workspace(pi),
+                Ok(_pi) => self.connect_home_and_workspace(pi),
                 Err(err) => Err(err),
             };
 
@@ -707,7 +701,7 @@ fn main() {
     let time_limit = Duration::from_millis(1900);
     let start_time = Instant::now();
 
-    let mut solver = Solver::new(n, m, k, t, time_limit, start_time);
+    let mut solver = Solver::new(n, m, k, t);
 
     {
         for _ in 0..m {
@@ -735,15 +729,21 @@ fn main() {
             .collect();
     }
 
-    let ans = solver.solve();
+    let mut best_score = k as i64;
+    let mut best_actions = vec![Action::DoNothing; t];
+
+    for i in 0..m {
+        let mut solver_cloned = solver.clone();
+        let now = solver_cloned.solve(&time_limit, &start_time, i);
+        if now.score > best_score {
+            best_score = now.score;
+            best_actions = now.actions.clone();
+        }
+    }
+
+    let ans = Answer::new(&best_actions, best_score);
+
     println!("{}", ans.to_string());
 
-    // if ans.score > k as i64 {
-    //     println!("{}", ans.to_string());
-    // } else {
-    //     for _ in 0..t {
-    //         println!("-1");
-    //     }
-    // }
     eprintln!("#score={}", ans.score);
 }
