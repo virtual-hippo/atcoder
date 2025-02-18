@@ -672,7 +672,7 @@ impl<'a> Solver<'a> {
         Ok(())
     }
 
-    fn select_pi(&mut self) -> Result<usize, SolverError> {
+    fn _select_pi(&mut self) -> Result<usize, SolverError> {
         // 作れるレールの数
         let rail_count = (self.input.k as i64) - COST_STATION * 2;
         let mut husoku_rail_count = (self.input.n * self.input.n) as i64;
@@ -701,8 +701,18 @@ impl<'a> Solver<'a> {
         Ok(pi)
     }
 
-    fn execute(&mut self, time_limit: &Duration, start_time: &Instant, pi: usize) -> Answer {
-        while self.state.actions.len() == 0 && self.state.actions.len() < self.input.t {
+    fn execute(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        pi_list: &Vec<usize>,
+    ) -> Answer {
+        let mut i = 0;
+
+        while self.state.actions.len() == 0
+            && self.state.actions.len() < self.input.t
+            && i < pi_list.len()
+        {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -723,13 +733,12 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let result_connect = match self.select_pi() {
-                Ok(_pi) => self.connect_home_and_workspace(pi),
-                Err(err) => Err(err),
-            };
+            let result_connect = self.connect_home_and_workspace(pi_list[i]);
 
             match result_connect {
-                Ok(_) => {}
+                Ok(_) => {
+                    i += 1;
+                }
                 Err(SolverError::NotEnoughMoney(cost)) => {
                     if cost == COST_RAIL {
                         while self.state.actions.len() < self.input.t
@@ -774,7 +783,8 @@ impl<'a> Solver<'a> {
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
         for i in 0..self.input.m {
-            let Answer { actions, score } = self.execute(&time_limit, &start_time, i);
+            let pi_list = vec![i];
+            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
             if score > best_score {
                 best_score = score;
                 self.best_actions = actions.clone();
