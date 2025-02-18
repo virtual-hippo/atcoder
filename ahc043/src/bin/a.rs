@@ -559,6 +559,10 @@ impl<'a> Solver<'a> {
     fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
+        if (calc_distance(pos0, pos1) as usize) + self.state.actions.len() >= self.input.t {
+            return Err(SolverError::TooManyActions);
+        }
+
         // pos0 -> pos1 への垂直のレールを建てる
         {
             if pos0.0 < pos1.0 {
