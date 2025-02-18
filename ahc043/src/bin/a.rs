@@ -1,10 +1,7 @@
 use itertools::*;
 use proconio::{fastout, input};
-use std::{
-    i64,
-    time::{Duration, Instant},
-    vec,
-};
+use std::collections::VecDeque;
+use std::time::{Duration, Instant};
 
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
@@ -391,6 +388,8 @@ struct SolverState {
     money: i64,
     actions: Vec<Action>,
     income: i64,
+    // 建設できなかった駅
+    station_queue: VecDeque<Pos>,
 }
 
 impl SolverState {
@@ -408,6 +407,7 @@ impl SolverState {
             money: input.k as i64,
             actions,
             income: 0,
+            station_queue: VecDeque::new(),
         }
     }
 }
@@ -509,6 +509,7 @@ impl<'a> Solver<'a> {
 
     fn build_station(&mut self, Pos(r, c): Pos) -> Result<(), SolverError> {
         if self.state.money < COST_STATION {
+            self.state.station_queue.push_back(Pos(r, c));
             return Err(SolverError::NotEnoughMoney(COST_STATION));
         }
         if self.state.actions.len() >= self.input.t {
@@ -702,6 +703,13 @@ impl<'a> Solver<'a> {
                 break;
             }
 
+            while self.state.station_queue.len() > 0 && self.state.money >= COST_STATION {
+                let pos = self.state.station_queue.pop_front().unwrap();
+                if let Err(SolverError::TooManyActions) = self.build_station(pos) {
+                    break;
+                }
+            }
+
             if cfg!(feature = "debug") {
                 println!(
                     "# actions.len={}, self.money={}, self.income={}",
@@ -719,14 +727,18 @@ impl<'a> Solver<'a> {
             match result_connect {
                 Ok(_) => {}
                 Err(SolverError::NotEnoughMoney(cost)) => {
-                    while self.state.actions.len() < self.input.t && self.state.money < cost {
-                        if let Err(SolverError::TooManyActions) = self.buildnothing() {
-                            break;
+                    if cost == COST_RAIL {
+                        while self.state.actions.len() < self.input.t
+                            && self.state.money < COST_RAIL
+                        {
+                            if let Err(SolverError::TooManyActions) = self.buildnothing() {
+                                break;
+                            }
                         }
                     }
                 }
                 Err(SolverError::TooManyActions) => {
-                    eprintln!("#TooManyActions");
+                    eprintln!("# TooManyActions");
                     break;
                 }
             }
