@@ -650,28 +650,19 @@ impl<'a> Solver<'a> {
             }
         }
 
+        // 駅を建てる
+        self.build_station(pos0)?;
+        self.build_station(pos1)?;
+
         Ok(())
     }
 
     fn connect_home_and_workspace(&mut self, pi: usize) -> Result<(), SolverError> {
-        if cfg!(feature = "debug") {
-            println!(
-                "# actions.len={}, self.money={}, self.income={}",
-                self.state.actions.len(),
-                self.state.money,
-                self.state.income
-            );
-        }
-
         // 接続する人の家と駅を結ぶ
         let pos0 = self.input.home[pi];
         let pos1 = self.input.workspace[pi];
 
         self.connect_points(pos0, pos1)?;
-
-        // 接続する人の家に駅を建てる
-        self.build_station(self.input.home[pi])?;
-        self.build_station(self.input.workspace[pi])?;
 
         Ok(())
     }
@@ -709,6 +700,15 @@ impl<'a> Solver<'a> {
         while self.state.actions.len() == 0 && self.state.actions.len() < self.input.t {
             if start_time.elapsed() >= *time_limit {
                 break;
+            }
+
+            if cfg!(feature = "debug") {
+                println!(
+                    "# actions.len={}, self.money={}, self.income={}",
+                    self.state.actions.len(),
+                    self.state.money,
+                    self.state.income
+                );
             }
 
             let result_connect = match self.select_pi() {
