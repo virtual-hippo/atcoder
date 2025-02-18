@@ -64,7 +64,7 @@ impl UnionFind {
     }
 }
 
-fn calc_distance(pos1: Pos, pos2: Pos) -> i64 {
+fn calc_distance(pos1: &Pos, pos2: &Pos) -> i64 {
     let pos1 = (pos1.0 as i64, pos1.1 as i64);
     let pos2 = (pos2.0 as i64, pos2.1 as i64);
 
@@ -242,7 +242,7 @@ impl Field {
     }
 
     fn is_connected(&mut self, s: Pos, t: Pos) -> bool {
-        debug_assert!(calc_distance(s, t) > 4);
+        debug_assert!(calc_distance(&s, &t) > 4);
 
         let stations_s = self.collect_stations(&s);
         let stations_t = self.collect_stations(&t);
@@ -367,7 +367,7 @@ impl SolverInput {
 
             home.push(home_i);
             workspace.push(workspace_i);
-            distance.push(calc_distance(home_i, workspace_i));
+            distance.push(calc_distance(&home_i, &workspace_i));
         }
 
         Self {
@@ -559,7 +559,7 @@ impl<'a> Solver<'a> {
     fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
-        if (calc_distance(pos0, pos1) as usize) + self.state.actions.len() >= self.input.t {
+        if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.input.t {
             return Err(SolverError::TooManyActions);
         }
 
