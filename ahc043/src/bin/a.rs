@@ -1,7 +1,9 @@
 use itertools::*;
 use proconio::{fastout, input};
-use std::collections::VecDeque;
+use std::collections::{BinaryHeap, VecDeque};
 use std::time::{Duration, Instant};
+
+use rustc_hash::FxHashMap;
 
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
@@ -334,6 +336,11 @@ struct SolverInput {
     home: Vec<Pos>,
     workspace: Vec<Pos>,
     distance: Vec<i64>,
+    // 区画の周りの建物の数を降順にソートしたもの
+    total_buildings_around_cell_heap: BinaryHeap<(usize, (usize, usize))>,
+
+    // 区画の周りで働いている or 住んでいる人々
+    people_around_cell: FxHashMap<(usize, usize), Vec<usize>>,
 }
 
 impl SolverInput {
@@ -352,23 +359,61 @@ impl SolverInput {
         let mut home = Vec::new();
         let mut workspace = Vec::new();
         let mut distance = Vec::new();
+        let mut total_buildings_around_cell = FxHashMap::default();
+        let mut people_around_cell = FxHashMap::default();
 
-        for _ in 0..m {
+        for pi in 0..m {
             input! {
                 i: usize,
                 j: usize,
             }
             let home_i = Pos(i, j);
+
+            itertools::iproduct!(-2_i64..3, -2_i64..3)
+                .filter(|&(dr, dc)| dr.abs() + dc.abs() <= 2)
+                .map(|(dr, dc)| ((i as i64 + dr), (j as i64 + dc)))
+                .filter(|&(r, c)| r >= 0 && r < n as i64 && c >= 0 && c < n as i64)
+                .for_each(|(r, c)| {
+                    let r = r as usize;
+                    let c = c as usize;
+                    *total_buildings_around_cell.entry((r, c)).or_insert(0) += 1;
+                    people_around_cell
+                        .entry((r, c))
+                        .or_insert(Vec::new())
+                        .push(pi);
+                });
+
             input! {
                 i: usize,
                 j: usize,
             }
             let workspace_i = Pos(i, j);
+            itertools::iproduct!(-2_i64..3, -2_i64..3)
+                .filter(|&(dr, dc)| dr.abs() + dc.abs() <= 2)
+                .map(|(dr, dc)| ((i as i64 + dr), (j as i64 + dc)))
+                .filter(|&(r, c)| r >= 0 && r < n as i64 && c >= 0 && c < n as i64)
+                .for_each(|(r, c)| {
+                    let r = r as usize;
+                    let c = c as usize;
+                    *total_buildings_around_cell.entry((r, c)).or_insert(0) += 1;
+                    people_around_cell
+                        .entry((r, c))
+                        .or_insert(Vec::new())
+                        .push(pi);
+                });
 
             home.push(home_i);
             workspace.push(workspace_i);
             distance.push(calc_distance(&home_i, &workspace_i));
         }
+
+        let total_buildings_around_cell_heap = {
+            let mut heap = BinaryHeap::with_capacity(n);
+            for (&(r, c), &cnt) in total_buildings_around_cell.iter() {
+                heap.push((cnt, (r, c)));
+            }
+            heap
+        };
 
         Self {
             n,
@@ -378,6 +423,8 @@ impl SolverInput {
             home,
             workspace,
             distance,
+            total_buildings_around_cell_heap,
+            people_around_cell,
         }
     }
 }
