@@ -362,50 +362,48 @@ impl SolverInput {
         let mut total_buildings_around_cell = FxHashMap::default();
         let mut people_around_cell = FxHashMap::default();
 
+        let mut field = vec![vec![vec![]; n]; n];
+
         for pi in 0..m {
             input! {
                 i: usize,
                 j: usize,
             }
             let home_i = Pos(i, j);
-
-            itertools::iproduct!(-2_i64..3, -2_i64..3)
-                .filter(|&(dr, dc)| dr.abs() + dc.abs() <= 2)
-                .map(|(dr, dc)| ((i as i64 + dr), (j as i64 + dc)))
-                .filter(|&(r, c)| r >= 0 && r < n as i64 && c >= 0 && c < n as i64)
-                .for_each(|(r, c)| {
-                    let r = r as usize;
-                    let c = c as usize;
-                    *total_buildings_around_cell.entry((r, c)).or_insert(0) += 1;
-                    people_around_cell
-                        .entry((r, c))
-                        .or_insert(Vec::new())
-                        .push(pi);
-                });
+            field[i][j].push(pi);
 
             input! {
                 i: usize,
                 j: usize,
             }
             let workspace_i = Pos(i, j);
-            itertools::iproduct!(-2_i64..3, -2_i64..3)
-                .filter(|&(dr, dc)| dr.abs() + dc.abs() <= 2)
-                .map(|(dr, dc)| ((i as i64 + dr), (j as i64 + dc)))
-                .filter(|&(r, c)| r >= 0 && r < n as i64 && c >= 0 && c < n as i64)
-                .for_each(|(r, c)| {
-                    let r = r as usize;
-                    let c = c as usize;
-                    *total_buildings_around_cell.entry((r, c)).or_insert(0) += 1;
-                    people_around_cell
-                        .entry((r, c))
-                        .or_insert(Vec::new())
-                        .push(pi);
-                });
+            field[i][j].push(pi);
 
             home.push(home_i);
             workspace.push(workspace_i);
             distance.push(calc_distance(&home_i, &workspace_i));
         }
+
+        itertools::iproduct!(0..n, 0..n, -2_i64..3, -2_i64..3)
+            .filter(|&(_i, _j, dr, dc)| dr.abs() + dc.abs() <= 2)
+            .filter(|&(i, j, dr, dc)| {
+                (i as i64 + dr) >= 0
+                    && (i as i64 + dr) < n as i64
+                    && (j as i64 + dc) >= 0
+                    && (j as i64 + dc) < n as i64
+            })
+            .map(|(i, j, dr, dc)| {
+                let r = (i as i64 + dr) as usize;
+                let c = (j as i64 + dc) as usize;
+                (i, j, r, c)
+            })
+            .for_each(|(i, j, r, c)| {
+                *total_buildings_around_cell.entry((i, j)).or_insert(0) += field[r][c].len();
+                people_around_cell
+                    .entry((i, j))
+                    .or_insert(Vec::new())
+                    .extend(field[r][c].iter());
+            });
 
         let total_buildings_around_cell_heap = {
             let mut heap = BinaryHeap::with_capacity(n);
