@@ -3,6 +3,8 @@ use proconio::{fastout, input};
 use std::collections::{BinaryHeap, VecDeque};
 use std::time::{Duration, Instant};
 
+use rand::Rng;
+
 use rustc_hash::FxHashMap;
 
 const COST_STATION: i64 = 5000;
@@ -404,6 +406,18 @@ impl SolverInput {
                     .or_insert(Vec::new())
                     .extend(field[r][c].iter());
             });
+
+        for i in people_around_cell.values_mut() {
+            *i = i
+                .iter()
+                .filter(|&&pi| {
+                    let home = home[pi];
+                    let workspace = workspace[pi];
+                    calc_distance(&home, &workspace) > 30
+                })
+                .map(|&pi| pi)
+                .collect();
+        }
 
         let total_buildings_around_cell_heap = {
             let mut heap = BinaryHeap::with_capacity(n);
@@ -815,64 +829,90 @@ impl<'a> Solver<'a> {
         );
     }
 
-    fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
-        let mut best_score = self.input.k as i64;
-
+    // 全ての人の家と仕事場の組み合わせを試す
+    fn solve1(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
         for i in 0..self.input.m {
             let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
             let Answer { actions, score } = self.execute(&time_limit, &start_time, &pos_pair_list);
-            if score > best_score {
-                best_score = score;
+            if score > *best_score {
+                *best_score = score;
                 self.best_actions = actions.clone();
             }
             self.state = SolverState::new(self.input);
         }
+    }
 
-        // 建物が多い順に試す
-        {
-            let mut cnt = 0;
+    // 周辺に建物が多い区画を順に試す
+    fn solve2(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+        let mut cnt = 500;
+        let mut rng = rand::prelude::ThreadRng::default();
+        let random_value = rng.gen_range(0..100);
 
-            while cnt < 10 {
-                let pi_list = self
-                    .input
-                    .total_buildings_around_cell_heap
-                    .iter()
-                    .enumerate()
-                    .filter(|&(i, _)| i < cnt)
-                    .map(|(_, (_, pos))| {
-                        (
-                            Pos(pos.0, pos.1),
-                            self.input.people_around_cell.get(pos).unwrap(),
-                        )
-                    })
-                    .map(|(pos, people)| {
-                        let mut ret = vec![];
-                        for &pi in people.iter() {
-                            let home = self.input.home[pi];
-                            let workspace = self.input.workspace[pi];
-                            let pair = if calc_distance(&home, &pos) <= 2 {
-                                (pos, workspace)
-                            } else {
-                                (pos, home)
-                            };
-
-                            debug_assert_eq!(calc_distance(&pair.0, &pair.1) > 2, true);
-
-                            ret.push(pair);
-                        }
-                        ret
-                    })
-                    .flatten()
-                    .collect::<Vec<(Pos, Pos)>>();
-
-                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
-                if score > best_score {
-                    best_score = score;
-                    self.best_actions = actions.clone();
-                }
-                self.state = SolverState::new(self.input);
-                cnt += 1;
+        while cnt > 0 {
+            if start_time.elapsed() >= *time_limit {
+                break;
             }
+
+            let pi_list = self
+                .input
+                .total_buildings_around_cell_heap
+                .iter()
+                .enumerate()
+                .filter(|&(i, _)| i < cnt)
+                .filter(|_| rng.gen_range(0..100) < random_value)
+                .map(|(_, (_, pos))| {
+                    (
+                        Pos(pos.0, pos.1),
+                        self.input.people_around_cell.get(pos).unwrap(),
+                    )
+                })
+                .map(|(pos, people)| {
+                    let mut ret = vec![];
+                    for &pi in people.iter() {
+                        let home = self.input.home[pi];
+                        let workspace = self.input.workspace[pi];
+                        let pair = if calc_distance(&home, &pos) <= 2 {
+                            (pos, workspace)
+                        } else {
+                            (pos, home)
+                        };
+
+                        debug_assert_eq!(calc_distance(&pair.0, &pair.1) > 2, true);
+
+                        ret.push(pair);
+                    }
+                    ret
+                })
+                .flatten()
+                .filter(|&(pos0, pos1)| {
+                    calc_distance(&pos0, &pos1) * COST_RAIL + COST_STATION * 2
+                        <= self.input.k as i64
+                })
+                .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
+                .collect::<Vec<(Pos, Pos)>>();
+
+            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+            if score > *best_score {
+                *best_score = score;
+                self.best_actions = actions.clone();
+            }
+            eprintln!("#score: {}", score);
+            self.state = SolverState::new(self.input);
+            cnt -= 1;
+        }
+    }
+
+    fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
+        let mut best_score = self.input.k as i64;
+
+        self.solve1(time_limit, start_time, &mut best_score);
+        eprintln!("#score: {}", best_score);
+
+        for _ in 0..20 {
+            if start_time.elapsed() >= *time_limit {
+                break;
+            }
+            self.solve2(time_limit, start_time, &mut best_score);
         }
 
         self.print_best_actions();
@@ -882,7 +922,7 @@ impl<'a> Solver<'a> {
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(1900);
+    let time_limit = Duration::from_millis(1930);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
