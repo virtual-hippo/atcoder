@@ -838,6 +838,7 @@ impl<'a> Solver<'a> {
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
+
         for i in 0..self.input.m {
             let pi_list = vec![i];
             let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
@@ -846,6 +847,32 @@ impl<'a> Solver<'a> {
                 self.best_actions = actions.clone();
             }
             self.state = SolverState::new(self.input);
+        }
+
+        // 建物が多い順に試す
+        {
+            let mut cnt = 0;
+
+            while cnt < 10 {
+                let pi_list = self
+                    .input
+                    .total_buildings_around_cell_heap
+                    .iter()
+                    .enumerate()
+                    .filter(|&(i, _)| i < cnt)
+                    .map(|(_, (_, pos))| self.input.people_around_cell.get(pos).unwrap())
+                    .flatten()
+                    .map(|pi| *pi)
+                    .collect::<Vec<usize>>();
+
+                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+                if score > best_score {
+                    best_score = score;
+                    self.best_actions = actions.clone();
+                }
+                self.state = SolverState::new(self.input);
+                cnt += 1;
+            }
         }
 
         self.print_best_actions();
