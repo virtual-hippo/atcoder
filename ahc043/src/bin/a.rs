@@ -655,19 +655,28 @@ impl<'a> Solver<'a> {
             }
         }
 
-        // 駅を建てる
-        self.build_station(pos0)?;
-        self.build_station(pos1)?;
-
         Ok(())
     }
 
     fn connect_home_and_workspace(&mut self, pi: usize) -> Result<(), SolverError> {
+        if self.state.is_connected[pi] {
+            return Ok(());
+        }
+
         // 接続する人の家と駅を結ぶ
         let pos0 = self.input.home[pi];
         let pos1 = self.input.workspace[pi];
 
         self.connect_points(pos0, pos1)?;
+
+        if !self.state.is_connected[pi] {
+            // 駅を建てる
+            self.build_station(pos0)?;
+        }
+        if !self.state.is_connected[pi] {
+            // 駅を建てる
+            self.build_station(pos1)?;
+        }
 
         Ok(())
     }
