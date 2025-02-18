@@ -700,28 +700,9 @@ impl<'a> Solver<'a> {
             }
         }
 
-        Ok(())
-    }
-
-    fn connect_home_and_workspace(&mut self, pi: usize) -> Result<(), SolverError> {
-        if self.state.is_connected[pi] {
-            return Ok(());
-        }
-
-        // 接続する人の家と駅を結ぶ
-        let pos0 = self.input.home[pi];
-        let pos1 = self.input.workspace[pi];
-
-        self.connect_points(pos0, pos1)?;
-
-        if !self.state.is_connected[pi] {
-            // 駅を建てる
-            self.build_station(pos0)?;
-        }
-        if !self.state.is_connected[pi] {
-            // 駅を建てる
-            self.build_station(pos1)?;
-        }
+        // 駅を建てる
+        self.build_station(pos0)?;
+        self.build_station(pos1)?;
 
         Ok(())
     }
@@ -759,13 +740,13 @@ impl<'a> Solver<'a> {
         &mut self,
         time_limit: &Duration,
         start_time: &Instant,
-        pi_list: &Vec<usize>,
+        pos_pair_list: &Vec<(Pos, Pos)>,
     ) -> Answer {
         let mut i = 0;
 
         while self.state.actions.len() == 0
             && self.state.actions.len() < self.input.t
-            && i < pi_list.len()
+            && i < pos_pair_list.len()
         {
             if start_time.elapsed() >= *time_limit {
                 break;
@@ -787,7 +768,7 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let result_connect = self.connect_home_and_workspace(pi_list[i]);
+            let result_connect = self.connect_points(pos_pair_list[i].0, pos_pair_list[i].1);
 
             match result_connect {
                 Ok(_) => {
@@ -838,8 +819,8 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
 
         for i in 0..self.input.m {
-            let pi_list = vec![i];
-            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+            let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
+            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pos_pair_list);
             if score > best_score {
                 best_score = score;
                 self.best_actions = actions.clone();
@@ -858,10 +839,31 @@ impl<'a> Solver<'a> {
                     .iter()
                     .enumerate()
                     .filter(|&(i, _)| i < cnt)
-                    .map(|(_, (_, pos))| self.input.people_around_cell.get(pos).unwrap())
+                    .map(|(_, (_, pos))| {
+                        (
+                            Pos(pos.0, pos.1),
+                            self.input.people_around_cell.get(pos).unwrap(),
+                        )
+                    })
+                    .map(|(pos, people)| {
+                        let mut ret = vec![];
+                        for &pi in people.iter() {
+                            let home = self.input.home[pi];
+                            let workspace = self.input.workspace[pi];
+                            let pair = if calc_distance(&home, &pos) <= 2 {
+                                (pos, workspace)
+                            } else {
+                                (pos, home)
+                            };
+
+                            debug_assert_eq!(calc_distance(&pair.0, &pair.1) > 2, true);
+
+                            ret.push(pair);
+                        }
+                        ret
+                    })
                     .flatten()
-                    .map(|pi| *pi)
-                    .collect::<Vec<usize>>();
+                    .collect::<Vec<(Pos, Pos)>>();
 
                 let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
                 if score > best_score {
