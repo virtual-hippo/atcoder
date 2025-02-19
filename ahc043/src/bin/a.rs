@@ -1,6 +1,6 @@
 use itertools::*;
 use proconio::{fastout, input};
-use std::collections::{BinaryHeap, VecDeque};
+use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
 use rand::Rng;
@@ -339,7 +339,7 @@ struct SolverInput {
     workspace: Vec<Pos>,
     distance: Vec<i64>,
     // 区画の周りの建物の数を降順にソートしたもの
-    total_buildings_around_cell_heap: BinaryHeap<(usize, (usize, usize))>,
+    total_buildings_around_cells: Vec<(usize, (usize, usize))>,
 
     // 区画の周りで働いている or 住んでいる人々
     people_around_cell: FxHashMap<(usize, usize), Vec<usize>>,
@@ -408,23 +408,16 @@ impl SolverInput {
             });
 
         for i in people_around_cell.values_mut() {
-            *i = i
-                .iter()
-                .filter(|&&pi| {
-                    let home = home[pi];
-                    let workspace = workspace[pi];
-                    calc_distance(&home, &workspace) > 30
-                })
-                .map(|&pi| pi)
-                .collect();
+            *i = i.iter().map(|&pi| pi).collect();
         }
 
-        let total_buildings_around_cell_heap = {
-            let mut heap = BinaryHeap::with_capacity(n);
+        let total_buildings_around_cells = {
+            let mut ret = Vec::with_capacity(n);
             for (&(r, c), &cnt) in total_buildings_around_cell.iter() {
-                heap.push((cnt, (r, c)));
+                ret.push((cnt, (r, c)));
             }
-            heap
+            ret.sort_by(|a, b| b.0.cmp(&a.0));
+            ret
         };
 
         Self {
@@ -435,7 +428,7 @@ impl SolverInput {
             home,
             workspace,
             distance,
-            total_buildings_around_cell_heap,
+            total_buildings_around_cells,
             people_around_cell,
         }
     }
@@ -716,7 +709,9 @@ impl<'a> Solver<'a> {
                     self.build_rail(&Building::HorizontalRail, pos)?;
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -768,11 +763,17 @@ impl<'a> Solver<'a> {
         &mut self,
         time_limit: &Duration,
         start_time: &Instant,
-        pos_pair_list: &Vec<(Pos, Pos)>,
+        pos_pair_list_: &Vec<(Pos, Pos)>,
     ) -> Answer {
-        let mut i = 0;
+        let mut pos_pair_queue: VecDeque<(Pos, Pos)> = VecDeque::new();
+        for pos_pair in pos_pair_list_.iter() {
+            pos_pair_queue.push_back(*pos_pair);
+        }
 
-        while self.state.actions.len() < self.input.t && i < pos_pair_list.len() {
+        let mut rng = rand::prelude::ThreadRng::default();
+        let random_value = rng.gen_range(0..100);
+
+        while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -786,9 +787,11 @@ impl<'a> Solver<'a> {
 
             // 建築を放棄した駅がたまりすぎたら貯蓄する
             // 2 - 5 を試したけど 3 が一番良かった
-            while self.state.station_queue.len() > 3 {
+            if self.state.station_queue.len() > 3 {
                 if let Err(SolverError::TooManyActions) = self.buildnothing() {
                     break;
+                } else {
+                    continue;
                 }
             }
 
@@ -801,13 +804,21 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let result_connect = self.connect_points(pos_pair_list[i].0, pos_pair_list[i].1);
+            let (pos0, pos1) = pos_pair_queue.pop_front().unwrap();
+
+            let result_connect = self.connect_points(pos0, pos1);
 
             match result_connect {
                 Ok(_) => {
-                    i += 1;
+                    // eprintln!("# pos_pair_queue.len()={}", pos_pair_queue.len());
+                    if rng.gen_range(50..150) < random_value {
+                        pos_pair_queue.make_contiguous().sort_by(|a, b| {
+                            calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1))
+                        });
+                    }
                 }
                 Err(SolverError::NotEnoughMoney(cost)) => {
+                    // eprintln!("# NotEnoughMoney cost={}", cost);
                     if cost == COST_RAIL {
                         while self.state.actions.len() < self.input.t
                             && self.state.money < COST_RAIL
@@ -817,9 +828,10 @@ impl<'a> Solver<'a> {
                             }
                         }
                     }
+                    pos_pair_queue.push_back((pos0, pos1));
                 }
                 Err(SolverError::TooManyActions) => {
-                    eprintln!("# TooManyActions");
+                    debug_assert!(self.state.actions.len() >= self.input.t);
                     break;
                 }
             }
@@ -887,7 +899,7 @@ impl<'a> Solver<'a> {
 
     // 周辺に建物が多い区画を順に試す
     fn solve2(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
-        let mut cnt = 500;
+        let mut cnt = 150;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
@@ -898,11 +910,11 @@ impl<'a> Solver<'a> {
 
             let pi_list_list = self
                 .input
-                .total_buildings_around_cell_heap
+                .total_buildings_around_cells
                 .iter()
                 .enumerate()
                 .filter(|&(i, _)| i < cnt)
-                .filter(|_| rng.gen_range(0..100) < random_value)
+                .filter(|_| rng.gen_range(50..150) < random_value)
                 .map(|(_, (_, pos))| {
                     (
                         Pos(pos.0, pos.1),
@@ -924,9 +936,7 @@ impl<'a> Solver<'a> {
 
                         debug_assert_eq!(distance > 2, true);
 
-                        if distance * COST_RAIL + COST_STATION * 2 <= self.input.k as i64 {
-                            ret.push(pair);
-                        }
+                        ret.push(pair);
                     }
                     ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
 
@@ -934,7 +944,7 @@ impl<'a> Solver<'a> {
                 })
                 .collect::<Vec<Vec<(Pos, Pos)>>>();
 
-            for pi_list in pi_list_list.iter() {
+            for (_i, pi_list) in pi_list_list.iter().enumerate() {
                 let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
                 if score > *best_score {
                     *best_score = score;
@@ -949,14 +959,14 @@ impl<'a> Solver<'a> {
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
 
-        self.solve1(time_limit, start_time, &mut best_score);
-
-        for _ in 0..10 {
+        for _ in 0..20 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
             self.solve2(time_limit, start_time, &mut best_score);
         }
+
+        self.solve1(time_limit, start_time, &mut best_score);
 
         self.print_best_actions();
         println!("#score: {}", best_score);
@@ -965,7 +975,7 @@ impl<'a> Solver<'a> {
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(1930);
+    let time_limit = Duration::from_millis(1950);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
