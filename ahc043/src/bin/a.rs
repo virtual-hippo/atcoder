@@ -632,7 +632,9 @@ impl<'a> Solver<'a> {
 
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -648,7 +650,9 @@ impl<'a> Solver<'a> {
                     }
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -660,7 +664,9 @@ impl<'a> Solver<'a> {
                     self.build_rail(&Building::VerticalRail, pos)?;
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -676,7 +682,9 @@ impl<'a> Solver<'a> {
                     }
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -693,7 +701,9 @@ impl<'a> Solver<'a> {
                     self.build_rail(&Building::HorizontalRail, pos)?;
                     if let Some(pre) = pre {
                         if !self.state.field.is_connected_rail(pre, pos) {
-                            self.build_station(pre)?;
+                            if let Err(_) = self.build_station(pre) {
+                                //
+                            }
                         }
                     }
                     pre = Some(pos);
@@ -715,8 +725,12 @@ impl<'a> Solver<'a> {
         }
 
         // 駅を建てる
-        self.build_station(pos0)?;
-        self.build_station(pos1)?;
+        while let Err(_) = self.build_station(pos0) {
+            self.buildnothing()?;
+        }
+        while let Err(_) = self.build_station(pos1) {
+            self.buildnothing()?;
+        }
 
         Ok(())
     }
@@ -758,10 +772,7 @@ impl<'a> Solver<'a> {
     ) -> Answer {
         let mut i = 0;
 
-        while self.state.actions.len() == 0
-            && self.state.actions.len() < self.input.t
-            && i < pos_pair_list.len()
-        {
+        while self.state.actions.len() < self.input.t && i < pos_pair_list.len() {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -769,6 +780,14 @@ impl<'a> Solver<'a> {
             while self.state.station_queue.len() > 0 && self.state.money >= COST_STATION {
                 let pos = self.state.station_queue.pop_front().unwrap();
                 if let Err(SolverError::TooManyActions) = self.build_station(pos) {
+                    break;
+                }
+            }
+
+            // 建築を放棄した駅がたまりすぎたら貯蓄する
+            // 2 - 5 を試したけど 3 が一番良かった
+            while self.state.station_queue.len() > 3 {
+                if let Err(SolverError::TooManyActions) = self.buildnothing() {
                     break;
                 }
             }
@@ -840,6 +859,30 @@ impl<'a> Solver<'a> {
             }
             self.state = SolverState::new(self.input);
         }
+
+        // {
+        //     let mut cloned_actions = self.best_actions.clone();
+        //     while let Action::DoNothing = cloned_actions[cloned_actions.len() - 1] {
+        //         cloned_actions.pop();
+        //     }
+
+        //     self.state = SolverState::new(self.input);
+
+        //     // 復元
+        //     for action in cloned_actions.iter() {
+        //         match action {
+        //             Action::DoNothing => {}
+        //             Action::Build((building, pos)) => match building {
+        //                 Building::Station => {
+        //                     let _ = self.build_station(*pos);
+        //                 }
+        //                 _ => {
+        //                     let _ = self.build_rail(building, *pos);
+        //                 }
+        //             },
+        //         }
+        //     }
+        // }
     }
 
     // 周辺に建物が多い区画を順に試す
@@ -853,7 +896,7 @@ impl<'a> Solver<'a> {
                 break;
             }
 
-            let pi_list = self
+            let pi_list_list = self
                 .input
                 .total_buildings_around_cell_heap
                 .iter()
@@ -877,26 +920,27 @@ impl<'a> Solver<'a> {
                             (pos, home)
                         };
 
-                        debug_assert_eq!(calc_distance(&pair.0, &pair.1) > 2, true);
+                        let distance = calc_distance(&pair.0, &pair.1);
 
-                        ret.push(pair);
+                        debug_assert_eq!(distance > 2, true);
+
+                        if distance * COST_RAIL + COST_STATION * 2 <= self.input.k as i64 {
+                            ret.push(pair);
+                        }
                     }
+                    ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
+
                     ret
                 })
-                .flatten()
-                .filter(|&(pos0, pos1)| {
-                    calc_distance(&pos0, &pos1) * COST_RAIL + COST_STATION * 2
-                        <= self.input.k as i64
-                })
-                .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
-                .collect::<Vec<(Pos, Pos)>>();
+                .collect::<Vec<Vec<(Pos, Pos)>>>();
 
-            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
-            if score > *best_score {
-                *best_score = score;
-                self.best_actions = actions.clone();
+            for pi_list in pi_list_list.iter() {
+                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+                if score > *best_score {
+                    *best_score = score;
+                    self.best_actions = actions.clone();
+                }
             }
-            eprintln!("#score: {}", score);
             self.state = SolverState::new(self.input);
             cnt -= 1;
         }
@@ -906,9 +950,8 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
 
         self.solve1(time_limit, start_time, &mut best_score);
-        eprintln!("#score: {}", best_score);
 
-        for _ in 0..20 {
+        for _ in 0..10 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -916,7 +959,7 @@ impl<'a> Solver<'a> {
         }
 
         self.print_best_actions();
-        eprintln!("#score: {}", best_score);
+        println!("#score: {}", best_score);
     }
 }
 
