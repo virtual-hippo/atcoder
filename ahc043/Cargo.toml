@@ -16,5 +16,6 @@ ac-library-rs = "=0.1.1"
 superslice = "1.0.0"
 itertools = "=0.11.0"
 rustc-hash = "=1.1.0"
+rand = "0.8.5"
 
 [dev-dependencies]
