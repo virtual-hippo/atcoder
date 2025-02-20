@@ -442,6 +442,8 @@ struct SolverState {
     income: i64,
     // 建設できなかった駅
     station_queue: VecDeque<Pos>,
+    // 建設住みの駅
+    stations: Vec<Pos>,
 }
 
 impl SolverState {
@@ -460,6 +462,7 @@ impl SolverState {
             actions,
             income: 0,
             station_queue: VecDeque::new(),
+            stations: Vec::new(),
         }
     }
 }
@@ -577,7 +580,7 @@ impl<'a> Solver<'a> {
 
         self.state.field.build(&Building::Station, Pos(r, c));
         self.state.money -= COST_STATION;
-
+        self.state.stations.push(Pos(r, c));
         self.state
             .actions
             .push(Action::Build((Building::Station, Pos(r, c))));
@@ -763,6 +766,7 @@ impl<'a> Solver<'a> {
         &mut self,
         time_limit: &Duration,
         start_time: &Instant,
+        // .0 は周辺に建物が多い区画, .1 は仕事場 or 家
         pos_pair_list_: &Vec<(Pos, Pos)>,
     ) -> Answer {
         let mut pos_pair_queue: VecDeque<(Pos, Pos)> = VecDeque::new();
@@ -804,7 +808,12 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let (pos0, pos1) = pos_pair_queue.pop_front().unwrap();
+            let (mut pos0, pos1) = pos_pair_queue.pop_front().unwrap();
+            for &station in self.state.stations.iter() {
+                if calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1) {
+                    pos0 = station;
+                }
+            }
 
             let result_connect = self.connect_points(pos0, pos1);
 
@@ -903,7 +912,7 @@ impl<'a> Solver<'a> {
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
-        while cnt > 0 {
+        while cnt > 30 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -936,7 +945,9 @@ impl<'a> Solver<'a> {
 
                         debug_assert_eq!(distance > 2, true);
 
-                        ret.push(pair);
+                        if distance > 10 {
+                            ret.push(pair);
+                        }
                     }
                     ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
 
@@ -951,6 +962,23 @@ impl<'a> Solver<'a> {
                     self.best_actions = actions.clone();
                 }
             }
+
+            for _ in 0..10 {
+                let pi_list = pi_list_list
+                    .iter()
+                    .filter(|_| rng.gen_range(50..150) < random_value)
+                    .flatten()
+                    .map(|&v| v)
+                    .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
+                    .collect::<Vec<_>>();
+
+                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+                if score > *best_score {
+                    *best_score = score;
+                    self.best_actions = actions.clone();
+                }
+            }
+
             self.state = SolverState::new(self.input);
             cnt -= 1;
         }
@@ -959,7 +987,7 @@ impl<'a> Solver<'a> {
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
 
-        for _ in 0..20 {
+        for _i in 0..30 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
