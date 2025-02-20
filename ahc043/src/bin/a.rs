@@ -336,11 +336,6 @@ struct SolverInput {
     home: Vec<Pos>,
     workspace: Vec<Pos>,
     distance: Vec<i64>,
-    // 区画の周りの建物の数を降順にソートしたもの
-    total_buildings_around_cells: Vec<(usize, (usize, usize))>,
-
-    // 区画の周りで働いている or 住んでいる人々
-    people_around_cell: Vec<Vec<Vec<usize>>>,
 }
 
 impl SolverInput {
@@ -359,10 +354,6 @@ impl SolverInput {
         let mut home = Vec::new();
         let mut workspace = Vec::new();
         let mut distance = Vec::new();
-        let mut total_buildings_around_cell = vec![vec![0; n]; n];
-        let mut people_around_cell = vec![vec![Vec::new(); n]; n];
-
-        let mut field = vec![vec![vec![]; n]; n];
 
         for pi in 0..m {
             input! {
@@ -370,27 +361,61 @@ impl SolverInput {
                 j: usize,
             }
             let home_i = Pos(i, j);
-            field[i][j].push(pi);
 
             input! {
                 i: usize,
                 j: usize,
             }
             let workspace_i = Pos(i, j);
-            field[i][j].push(pi);
 
             home.push(home_i);
             workspace.push(workspace_i);
             distance.push(calc_distance(&home_i, &workspace_i));
         }
 
-        itertools::iproduct!(0..n, 0..n, -2_i64..3, -2_i64..3)
+        Self {
+            n,
+            m,
+            k,
+            t,
+            home,
+            workspace,
+            distance,
+        }
+    }
+}
+
+struct SolverInfo {
+    // 区画の周りの建物の数を降順にソートしたもの
+    total_buildings_around_cells: Vec<(usize, (usize, usize))>,
+    // 区画の周りで働いている or 住んでいる人々
+    people_around_cell: Vec<Vec<Vec<usize>>>,
+
+    // 繋げると点数が高くなる組み合わせを降順にソートしたもの
+    yoi_pair_list: Vec<(i64, (Pos, Pos))>,
+}
+
+impl SolverInfo {
+    fn new(solver: &mut Solver, time_limit: &Duration, start_time: &Instant) -> Self {
+        let mut total_buildings_around_cell = vec![vec![0; solver.input.n]; solver.input.n];
+        let mut people_around_cell = vec![vec![Vec::new(); solver.input.n]; solver.input.n];
+
+        let mut field = vec![vec![vec![]; solver.input.n]; solver.input.n];
+
+        for pi in 0..solver.input.m {
+            let Pos(i, j) = solver.input.home[pi];
+            field[i][j].push(pi);
+            let Pos(i, j) = solver.input.workspace[pi];
+            field[i][j].push(pi);
+        }
+
+        itertools::iproduct!(0..solver.input.n, 0..solver.input.n, -2_i64..3, -2_i64..3)
             .filter(|&(_i, _j, dr, dc)| dr.abs() + dc.abs() <= 2)
             .filter(|&(i, j, dr, dc)| {
                 (i as i64 + dr) >= 0
-                    && (i as i64 + dr) < n as i64
+                    && (i as i64 + dr) < solver.input.n as i64
                     && (j as i64 + dc) >= 0
-                    && (j as i64 + dc) < n as i64
+                    && (j as i64 + dc) < solver.input.n as i64
             })
             .map(|(i, j, dr, dc)| {
                 let r = (i as i64 + dr) as usize;
@@ -402,25 +427,46 @@ impl SolverInput {
                 people_around_cell[i][j].extend(field[r][c].iter());
             });
 
-        let total_buildings_around_cells = iproduct!(0..n, 0..n)
+        let total_buildings_around_cells = iproduct!(0..solver.input.n, 0..solver.input.n)
             .map(|(i, j)| (total_buildings_around_cell[i][j], (i, j)))
             .sorted_by(|a, b| b.0.cmp(&a.0))
-            .collect();
+            .collect::<Vec<_>>();
+
+        let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+
+        for i in 0..total_buildings_around_cells.len() - 1 {
+            if total_buildings_around_cells[i].0 == 0 {
+                continue;
+            }
+
+            for j in i + 1..total_buildings_around_cells.len() {
+                if total_buildings_around_cells[j].0 == 0 {
+                    continue;
+                }
+                let pair = (
+                    Pos(
+                        total_buildings_around_cells[i].1 .0,
+                        total_buildings_around_cells[i].1 .1,
+                    ),
+                    Pos(
+                        total_buildings_around_cells[j].1 .0,
+                        total_buildings_around_cells[j].1 .1,
+                    ),
+                );
+                let Answer { actions: _, score } =
+                    solver.execute(&time_limit, &start_time, &vec![pair]);
+                yoi_pair_list.push((score, pair));
+            }
+        }
+        yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
 
         Self {
-            n,
-            m,
-            k,
-            t,
-            home,
-            workspace,
-            distance,
             total_buildings_around_cells,
             people_around_cell,
+            yoi_pair_list,
         }
     }
 }
-
 struct SolverState {
     is_connected: Vec<bool>,
     field: Field,
@@ -858,20 +904,6 @@ impl<'a> Solver<'a> {
         );
     }
 
-    // TODO: 区画の組み合わせを全探索してスコアが良くなるもの上位 k 個を取得する
-    // fn find_best_pos_pair(&self) {
-    //     iproduct!(0..self.input.n,0..self.input.n).filter(|(i,j)| );
-    //     for i in 0..self.input.m {
-    //         let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
-    //         let Answer { actions, score } = self.execute(&time_limit, &start_time, &pos_pair_list);
-    //         if score > *best_score {
-    //             *best_score = score;
-    //             self.best_actions = actions.clone();
-    //         }
-    //         self.state = SolverState::new(self.input);
-    //     }
-    // }
-
     // 全ての人の家と仕事場の組み合わせを試す
     fn solve1(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
         for i in 0..self.input.m {
@@ -910,7 +942,13 @@ impl<'a> Solver<'a> {
     }
 
     // 周辺に建物が多い区画を順に試す
-    fn solve2(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn solve2(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        info: &SolverInfo,
+    ) {
         let mut cnt = 150;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
@@ -920,19 +958,13 @@ impl<'a> Solver<'a> {
                 break;
             }
 
-            let pi_list_list = self
-                .input
+            let pi_list_list = info
                 .total_buildings_around_cells
                 .iter()
                 .enumerate()
                 .filter(|&(i, _)| i < cnt)
                 .filter(|_| rng.gen_range(50..150) < random_value)
-                .map(|(_, (_, pos))| {
-                    (
-                        Pos(pos.0, pos.1),
-                        &self.input.people_around_cell[pos.0][pos.1],
-                    )
-                })
+                .map(|(_, (_, pos))| (Pos(pos.0, pos.1), &info.people_around_cell[pos.0][pos.1]))
                 .map(|(pos, people)| {
                     let mut ret = vec![];
                     for &pi in people.iter() {
@@ -989,12 +1021,13 @@ impl<'a> Solver<'a> {
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
+        let info = SolverInfo::new(self, time_limit, start_time);
 
         for _i in 0..30 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
-            self.solve2(time_limit, start_time, &mut best_score);
+            self.solve2(time_limit, start_time, &mut best_score, &info);
         }
 
         self.solve1(time_limit, start_time, &mut best_score);
