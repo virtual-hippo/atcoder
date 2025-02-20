@@ -5,8 +5,6 @@ use std::time::{Duration, Instant};
 
 use rand::Rng;
 
-use rustc_hash::FxHashMap;
-
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
 
@@ -342,7 +340,7 @@ struct SolverInput {
     total_buildings_around_cells: Vec<(usize, (usize, usize))>,
 
     // 区画の周りで働いている or 住んでいる人々
-    people_around_cell: FxHashMap<(usize, usize), Vec<usize>>,
+    people_around_cell: Vec<Vec<Vec<usize>>>,
 }
 
 impl SolverInput {
@@ -361,8 +359,8 @@ impl SolverInput {
         let mut home = Vec::new();
         let mut workspace = Vec::new();
         let mut distance = Vec::new();
-        let mut total_buildings_around_cell = FxHashMap::default();
-        let mut people_around_cell = FxHashMap::default();
+        let mut total_buildings_around_cell = vec![vec![0; n]; n];
+        let mut people_around_cell = vec![vec![Vec::new(); n]; n];
 
         let mut field = vec![vec![vec![]; n]; n];
 
@@ -400,25 +398,14 @@ impl SolverInput {
                 (i, j, r, c)
             })
             .for_each(|(i, j, r, c)| {
-                *total_buildings_around_cell.entry((i, j)).or_insert(0) += field[r][c].len();
-                people_around_cell
-                    .entry((i, j))
-                    .or_insert(Vec::new())
-                    .extend(field[r][c].iter());
+                total_buildings_around_cell[i][j] += field[r][c].len();
+                people_around_cell[i][j].extend(field[r][c].iter());
             });
 
-        for i in people_around_cell.values_mut() {
-            *i = i.iter().map(|&pi| pi).collect();
-        }
-
-        let total_buildings_around_cells = {
-            let mut ret = Vec::with_capacity(n);
-            for (&(r, c), &cnt) in total_buildings_around_cell.iter() {
-                ret.push((cnt, (r, c)));
-            }
-            ret.sort_by(|a, b| b.0.cmp(&a.0));
-            ret
-        };
+        let total_buildings_around_cells = iproduct!(0..n, 0..n)
+            .map(|(i, j)| (total_buildings_around_cell[i][j], (i, j)))
+            .sorted_by(|a, b| b.0.cmp(&a.0))
+            .collect();
 
         Self {
             n,
@@ -943,7 +930,7 @@ impl<'a> Solver<'a> {
                 .map(|(_, (_, pos))| {
                     (
                         Pos(pos.0, pos.1),
-                        self.input.people_around_cell.get(pos).unwrap(),
+                        &self.input.people_around_cell[pos.0][pos.1],
                     )
                 })
                 .map(|(pos, people)| {
