@@ -809,6 +809,8 @@ impl<'a> Solver<'a> {
             }
 
             let (mut pos0, pos1) = pos_pair_queue.pop_front().unwrap();
+
+            // 建築済みの近い駅を探す
             for &station in self.state.stations.iter() {
                 if calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1) {
                     pos0 = station;
@@ -868,6 +870,20 @@ impl<'a> Solver<'a> {
             self.best_actions.iter().map(|a| a.to_string()).join("\n")
         );
     }
+
+    // TODO: 区画の組み合わせを全探索してスコアが良くなるもの上位 k 個を取得する
+    // fn find_best_pos_pair(&self) {
+    //     iproduct!(0..self.input.n,0..self.input.n).filter(|(i,j)| );
+    //     for i in 0..self.input.m {
+    //         let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
+    //         let Answer { actions, score } = self.execute(&time_limit, &start_time, &pos_pair_list);
+    //         if score > *best_score {
+    //             *best_score = score;
+    //             self.best_actions = actions.clone();
+    //         }
+    //         self.state = SolverState::new(self.input);
+    //     }
+    // }
 
     // 全ての人の家と仕事場の組み合わせを試す
     fn solve1(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
