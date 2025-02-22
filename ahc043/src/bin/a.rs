@@ -1,5 +1,6 @@
 use itertools::*;
 use proconio::{fastout, input};
+use rustc_hash::FxHashSet;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
@@ -624,6 +625,81 @@ impl SolverInfo {
         };
 
         new
+    }
+
+    fn create_high_income_list(
+        input: &SolverInput,
+        total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
+        people_around_cell: &Vec<Vec<Vec<usize>>>,
+        start_time: &Instant,
+        time_limit: &Duration,
+        t: usize,
+        connected_people: &FxHashSet<usize>,
+    ) -> Vec<(i64, (Pos, Pos))> {
+        let mut income_list = Vec::with_capacity(total_buildings_around_cells.len());
+        for i in 0..300 {
+            if start_time.elapsed() >= *time_limit {
+                eprintln!("time limit");
+                break;
+            }
+
+            // HACK 間引き方考察余地あり
+            // 高スコアが見込まれないものは間引く
+            if total_buildings_around_cells[i].0 < 10 {
+                continue;
+            }
+
+            for j in i + 1..301 {
+                if start_time.elapsed() >= *time_limit {
+                    eprintln!("time limit");
+                    break;
+                }
+
+                // 高スコアが見込まれないものは間引く
+                if total_buildings_around_cells[j].0 < 10 {
+                    continue;
+                }
+                let pair = (
+                    Pos::new(total_buildings_around_cells[i].1),
+                    Pos::new(total_buildings_around_cells[j].1),
+                );
+
+                let distance = calc_distance(&pair.0, &pair.1);
+
+                // 収入が増えるものを計算する
+                let income = {
+                    let building_count = distance + 1;
+                    let nothing_count = ((t as i64) - building_count).max(0);
+
+                    let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
+                    let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
+
+                    // pos1, pos2 両方に属する人を探す
+                    let peoples = people1
+                        .iter()
+                        .filter(|&pi1| people2.contains(pi1))
+                        .collect::<Vec<_>>();
+
+                    let income = peoples
+                        .iter()
+                        .filter(|&&pi| connected_people.contains(pi))
+                        .filter(|&&pi| {
+                            let home = input.home[*pi];
+                            let workspace = input.workspace[*pi];
+                            can_tsukin_if_build_station(&home, &workspace, &pair)
+                        })
+                        .map(|pi| input.distance[**pi])
+                        .sum::<i64>();
+
+                    income * nothing_count
+                };
+                income_list.push((income, pair));
+            }
+        }
+
+        income_list.sort_by(|a, b| b.0.cmp(&a.0));
+
+        income_list
     }
 }
 struct SolverState {
