@@ -703,6 +703,7 @@ impl SolverInfo {
     }
 }
 struct SolverState {
+    // 人が通勤できるかどうか
     is_connected: Vec<bool>,
     field: Field,
     money: i64,
@@ -712,6 +713,8 @@ struct SolverState {
     station_queue: VecDeque<Pos>,
     // 建設住みの駅
     stations: Vec<Pos>,
+    // 通勤できる人々
+    connected_people: FxHashSet<usize>,
 }
 
 impl SolverState {
@@ -731,6 +734,7 @@ impl SolverState {
             income: 0,
             station_queue: VecDeque::new(),
             stations: Vec::new(),
+            connected_people: FxHashSet::default(),
         }
     }
 }
@@ -765,6 +769,7 @@ impl<'a> Solver<'a> {
                     .is_connected(self.input.home[i], self.input.workspace[i])
             {
                 self.state.is_connected[i] = true;
+                self.state.connected_people.insert(i);
             }
         }
     }
