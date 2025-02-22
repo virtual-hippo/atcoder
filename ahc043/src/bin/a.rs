@@ -547,7 +547,7 @@ impl SolverInfo {
                 let kenchiku_cost = (distance - 1) * COST_RAIL + COST_STATION * 2;
                 let money = input.k as i64;
 
-                // スコアが多いものを計算する
+                // スコアが高いものを計算する
                 let income = {
                     let building_count = distance + 1;
                     let nothing_count = (input.t as i64) - building_count;
@@ -584,6 +584,8 @@ impl SolverInfo {
 
         yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
 
+        // 距離が近い点はまとめる
+        // HACK まとめないほうがスコア上がる可能性もある
         let new = {
             let mut new = vec![];
             let mut exists = vec![];
