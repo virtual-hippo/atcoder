@@ -8,8 +8,13 @@ use rand::Rng;
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Pos(usize, usize);
+impl Pos {
+    fn new((r, c): (usize, usize)) -> Self {
+        Self(r, c)
+    }
+}
 
 #[derive(Clone)]
 struct UnionFind {
@@ -355,7 +360,7 @@ impl SolverInput {
         let mut workspace = Vec::new();
         let mut distance = Vec::new();
 
-        for pi in 0..m {
+        for _ in 0..m {
             input! {
                 i: usize,
                 j: usize,
@@ -395,13 +400,15 @@ struct SolverInfo {
     yoi_pair_list: Vec<(i64, (Pos, Pos))>,
 }
 
+// 駅を建てた際に通勤可能になるか判定する
+fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos)) -> bool {
+    (calc_distance(&home, &stations.0) <= 2 && calc_distance(&workspace, &stations.1) <= 2)
+        || (calc_distance(&home, &stations.1) <= 2 && calc_distance(&workspace, &stations.0) <= 2)
+}
+
 impl SolverInfo {
     fn new(solver: &mut Solver, time_limit: &Duration, start_time: &Instant) -> Self {
-        let mut total_buildings_around_cell = vec![vec![0; solver.input.n]; solver.input.n];
-        let mut people_around_cell = vec![vec![Vec::new(); solver.input.n]; solver.input.n];
-
         let mut field = vec![vec![vec![]; solver.input.n]; solver.input.n];
-
         for pi in 0..solver.input.m {
             let Pos(i, j) = solver.input.home[pi];
             field[i][j].push(pi);
@@ -409,6 +416,10 @@ impl SolverInfo {
             field[i][j].push(pi);
         }
 
+        // cell の情報を集める
+        let mut total_buildings_around_cell = vec![vec![0; solver.input.n]; solver.input.n];
+        let mut people_around_cell: Vec<Vec<Vec<usize>>> =
+            vec![vec![vec![]; solver.input.n]; solver.input.n];
         itertools::iproduct!(0..solver.input.n, 0..solver.input.n, -2_i64..3, -2_i64..3)
             .filter(|&(_i, _j, dr, dc)| dr.abs() + dc.abs() <= 2)
             .filter(|&(i, j, dr, dc)| {
@@ -432,39 +443,185 @@ impl SolverInfo {
             .sorted_by(|a, b| b.0.cmp(&a.0))
             .collect::<Vec<_>>();
 
-        let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+        // let mut shunyu_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
 
-        for i in 0..total_buildings_around_cells.len() - 1 {
-            if total_buildings_around_cells[i].0 == 0 {
-                continue;
-            }
+        // for i in 0..150 {
+        //     if start_time.elapsed() >= *time_limit {
+        //         eprintln!("time limit");
+        //         break;
+        //     }
 
-            for j in i + 1..total_buildings_around_cells.len() {
-                if total_buildings_around_cells[j].0 == 0 {
-                    continue;
-                }
-                let pair = (
-                    Pos(
-                        total_buildings_around_cells[i].1 .0,
-                        total_buildings_around_cells[i].1 .1,
-                    ),
-                    Pos(
-                        total_buildings_around_cells[j].1 .0,
-                        total_buildings_around_cells[j].1 .1,
-                    ),
-                );
-                let Answer { actions: _, score } =
-                    solver.execute(&time_limit, &start_time, &vec![pair]);
-                yoi_pair_list.push((score, pair));
-            }
-        }
-        yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
+        //     // 高スコアが見込まれないものは間引く
+        //     if total_buildings_around_cells[i].0 < 10 {
+        //         continue;
+        //     }
+
+        //     for j in i + 1..151 {
+        //         if start_time.elapsed() >= *time_limit {
+        //             eprintln!("time limit");
+        //             break;
+        //         }
+
+        //         // 高スコアが見込まれないものは間引く
+        //         if total_buildings_around_cells[j].0 < 10 {
+        //             continue;
+        //         }
+        //         let pair = (
+        //             Pos::new(total_buildings_around_cells[i].1),
+        //             Pos::new(total_buildings_around_cells[j].1),
+        //         );
+
+        //         // 総収入が多いものを計算する
+        //         let so_income = {
+        //             let building_count = calc_distance(&pair.0, &pair.1) + 1;
+        //             let nothing_count = (solver.input.t as i64) - building_count;
+
+        //             let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
+        //             let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
+
+        //             // pos1, pos2 両方に属する人を探す
+        //             let income = people1
+        //                 .iter()
+        //                 .filter(|&pi1| people2.contains(pi1))
+        //                 .map(|pi| solver.input.distance[*pi])
+        //                 .sum::<i64>();
+
+        //             nothing_count * income
+        //         };
+        //         shunyu_pair_list.push((so_income, pair));
+        //     }
+        // }
+
+        // shunyu_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
+
+        let yoi_pair_list = Self::create_yoi_pair_list(
+            solver,
+            &total_buildings_around_cells,
+            &people_around_cell,
+            &start_time,
+            &time_limit,
+        );
 
         Self {
             total_buildings_around_cells,
             people_around_cell,
             yoi_pair_list,
         }
+    }
+
+    fn create_yoi_pair_list(
+        solver: &Solver,
+        total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
+        people_around_cell: &Vec<Vec<Vec<usize>>>,
+        start_time: &Instant,
+        time_limit: &Duration,
+    ) -> Vec<(i64, (Pos, Pos))> {
+        let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+        for i in 0..300 {
+            if start_time.elapsed() >= *time_limit {
+                eprintln!("time limit");
+                break;
+            }
+
+            // 高スコアが見込まれないものは間引く
+            if total_buildings_around_cells[i].0 < 10 {
+                continue;
+            }
+
+            for j in i + 1..301 {
+                if start_time.elapsed() >= *time_limit {
+                    eprintln!("time limit");
+                    break;
+                }
+
+                // 高スコアが見込まれないものは間引く
+                if total_buildings_around_cells[j].0 < 10 {
+                    continue;
+                }
+                let pair = (
+                    Pos::new(total_buildings_around_cells[i].1),
+                    Pos::new(total_buildings_around_cells[j].1),
+                );
+
+                let distance = calc_distance(&pair.0, &pair.1);
+                let kenchiku_cost = (distance - 1) * COST_RAIL + COST_STATION * 2;
+                let money = solver.input.k as i64;
+
+                // スコアが多いものを計算する
+                let income = {
+                    let building_count = distance + 1;
+                    let nothing_count = (solver.input.t as i64) - building_count;
+
+                    let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
+                    let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
+
+                    // pos1, pos2 両方に属する人を探す
+                    let peoples = people1
+                        .iter()
+                        .filter(|&pi1| people2.contains(pi1))
+                        .collect::<Vec<_>>();
+
+                    let income = peoples
+                        .iter()
+                        .filter(|&&pi| {
+                            let home = solver.input.home[*pi];
+                            let workspace = solver.input.workspace[*pi];
+                            can_tsukin_if_build_station(&home, &workspace, &pair)
+                        })
+                        .map(|pi| solver.input.distance[**pi])
+                        .sum::<i64>();
+
+                    income * nothing_count
+                };
+                let score = if kenchiku_cost <= money {
+                    income + money - kenchiku_cost
+                } else {
+                    money
+                };
+                yoi_pair_list.push((score, pair));
+            }
+        }
+
+        yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
+
+        let new = {
+            let mut new = vec![];
+            let mut exists = vec![];
+            for &(score, pair) in yoi_pair_list.iter() {
+                if exists.len() == 0 {
+                    new.push((score, pair));
+                    exists.push(pair.0);
+                    exists.push(pair.1);
+                    continue;
+                }
+
+                let mut new1 = pair.0;
+                let mut new2 = pair.1;
+
+                for exist_pos in exists.iter() {
+                    if new1 == pair.0 && calc_distance(&pair.0, exist_pos) <= 2 {
+                        new1 = *exist_pos;
+                    }
+                    if new2 == pair.1 && calc_distance(&pair.1, exist_pos) <= 2 {
+                        new2 = *exist_pos;
+                    }
+                    if new1 != pair.0 && new2 != pair.1 {
+                        break;
+                    }
+                }
+
+                new.push((score, (new1, new2)));
+                if new1 == pair.0 {
+                    exists.push(pair.0);
+                }
+                if new2 == pair.1 {
+                    exists.push(pair.1);
+                }
+            }
+            new
+        };
+
+        new
     }
 }
 struct SolverState {
@@ -651,6 +808,8 @@ impl<'a> Solver<'a> {
             return Err(SolverError::TooManyActions);
         }
 
+        // TODO: 繋げても収入が増えない場合はスキップする
+
         // pos0 -> pos1 への垂直のレールを建てる
         {
             if pos0.0 < pos1.0 {
@@ -764,35 +923,6 @@ impl<'a> Solver<'a> {
         }
 
         Ok(())
-    }
-
-    fn _select_pi(&mut self) -> Result<usize, SolverError> {
-        // 作れるレールの数
-        let rail_count = (self.input.k as i64) - COST_STATION * 2;
-        let mut husoku_rail_count = (self.input.n * self.input.n) as i64;
-
-        let mut pi = 0;
-
-        while pi < self.input.m {
-            if self.state.is_connected[pi] {
-                pi += 1;
-                continue;
-            }
-
-            if self.input.distance[pi] - 1 <= rail_count {
-                break;
-            } else {
-                husoku_rail_count = husoku_rail_count.min(self.input.distance[pi] - 1 - rail_count);
-            }
-            pi += 1;
-        }
-
-        if pi == self.input.m {
-            debug_assert!(husoku_rail_count > 0);
-            return Err(SolverError::NotEnoughMoney(husoku_rail_count * COST_RAIL));
-        }
-
-        Ok(pi)
     }
 
     fn execute(
@@ -991,7 +1121,10 @@ impl<'a> Solver<'a> {
                 .collect::<Vec<Vec<(Pos, Pos)>>>();
 
             for (_i, pi_list) in pi_list_list.iter().enumerate() {
-                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+                let taken = info.yoi_pair_list.iter().map(|(_, pair)| pair).take(10);
+                let merged: Vec<_> = taken.chain(pi_list.iter()).cloned().collect();
+
+                let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
                     *best_score = score;
                     self.best_actions = actions.clone();
@@ -1007,7 +1140,10 @@ impl<'a> Solver<'a> {
                     .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
                     .collect::<Vec<_>>();
 
-                let Answer { actions, score } = self.execute(&time_limit, &start_time, &pi_list);
+                let taken = info.yoi_pair_list.iter().map(|(_, pair)| pair).take(10);
+                let merged: Vec<_> = taken.chain(pi_list.iter()).cloned().collect();
+
+                let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
                     *best_score = score;
                     self.best_actions = actions.clone();
@@ -1019,9 +1155,113 @@ impl<'a> Solver<'a> {
         }
     }
 
+    fn solve3(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        info: &SolverInfo,
+    ) {
+        let mut cnt = 100;
+        let mut rng = rand::prelude::ThreadRng::default();
+        let random_value = rng.gen_range(30..130);
+
+        let yoi_pair_list = info
+            .yoi_pair_list
+            .iter()
+            .map(|(_, pair)| *pair)
+            .take(50)
+            .collect::<Vec<_>>();
+
+        while cnt > 0 {
+            if start_time.elapsed() >= *time_limit {
+                break;
+            }
+            let yoi_pair_list = yoi_pair_list
+                .iter()
+                .enumerate()
+                .filter(|_| rng.gen_range(0..50) < random_value)
+                .map(|(_, pair)| *pair)
+                .collect::<Vec<_>>();
+
+            let pi_list_list = yoi_pair_list
+                .iter()
+                .map(|(pos0, pos1)| {
+                    let mut ret = vec![];
+
+                    // HACK 高速化余地あり
+                    let people0 = &info.people_around_cell[pos0.0][pos1.1];
+                    let people1 = &info.people_around_cell[pos0.0][pos1.1];
+
+                    for &pi in people0.iter() {
+                        let home = self.input.home[pi];
+                        let workspace = self.input.workspace[pi];
+                        let pair = if calc_distance(&home, &pos0) <= 2 {
+                            (*pos0, workspace)
+                        } else {
+                            (*pos0, home)
+                        };
+
+                        let distance = calc_distance(&pair.0, &pair.1);
+
+                        debug_assert_eq!(distance > 2, true);
+
+                        if distance > 10 {
+                            ret.push(pair);
+                        }
+                    }
+
+                    for &pi in people1.iter() {
+                        let home = self.input.home[pi];
+                        let workspace = self.input.workspace[pi];
+                        let pair = if calc_distance(&home, &pos1) <= 2 {
+                            (*pos1, workspace)
+                        } else {
+                            (*pos1, home)
+                        };
+
+                        let distance = calc_distance(&pair.0, &pair.1);
+
+                        debug_assert_eq!(distance > 2, true);
+
+                        if distance > 10 {
+                            ret.push(pair);
+                        }
+                    }
+
+                    ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
+
+                    ret
+                })
+                .collect::<Vec<Vec<(Pos, Pos)>>>();
+
+            let merged: Vec<_> = yoi_pair_list
+                .iter()
+                .chain(pi_list_list.iter().flatten())
+                .cloned()
+                .collect();
+
+            let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
+            if score > *best_score {
+                *best_score = score;
+                self.best_actions = actions.clone();
+            }
+            cnt -= 1;
+        }
+    }
+
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
         let info = SolverInfo::new(self, time_limit, start_time);
+        eprintln!("{}", start_time.elapsed().as_millis());
+
+        for _i in 0..50 {
+            if start_time.elapsed() >= *time_limit {
+                break;
+            }
+
+            self.solve3(time_limit, start_time, &mut best_score, &info);
+        }
 
         for _i in 0..30 {
             if start_time.elapsed() >= *time_limit {
@@ -1033,13 +1273,14 @@ impl<'a> Solver<'a> {
         self.solve1(time_limit, start_time, &mut best_score);
 
         self.print_best_actions();
+        println!("#time: {}", start_time.elapsed().as_millis());
         println!("#score: {}", best_score);
     }
 }
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(1950);
+    let time_limit = Duration::from_millis(2910);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
