@@ -1054,7 +1054,7 @@ impl<'a> Solver<'a> {
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
-        'outer: while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
+        while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -1095,26 +1095,12 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let (mut pos0, mut pos1) = pos_pair_queue.pop_front().unwrap();
+            let (mut pos0, pos1) = pos_pair_queue.pop_front().unwrap();
 
             // 建築済みの近い駅を探す
-            {
-                for &station in self.state.stations.iter() {
-                    let is_same_pos0 = self.state.field.uf.is_same(station, pos0);
-                    let is_same_pos1 = self.state.field.uf.is_same(station, pos1);
-                    // 接続済みは繋げない
-                    if is_same_pos0 && is_same_pos1 {
-                        continue 'outer;
-                    }
-
-                    if is_same_pos0 && calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1)
-                    {
-                        pos0 = station;
-                    }
-                    if is_same_pos1 && calc_distance(&station, &pos0) < calc_distance(&pos1, &pos0)
-                    {
-                        pos1 = station;
-                    }
+            for &station in self.state.stations.iter() {
+                if calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1) {
+                    pos0 = station;
                 }
             }
 
