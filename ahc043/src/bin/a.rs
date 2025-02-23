@@ -410,7 +410,12 @@ fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos
 }
 
 impl SolverInfo {
-    fn new(input: &SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
+    fn new(
+        input: &SolverInput,
+        time_limit: &Duration,
+        start_time: &Instant,
+        get_shikiichi: fn(usize) -> usize,
+    ) -> Self {
         let mut field = vec![vec![vec![]; input.n]; input.n];
         for pi in 0..input.m {
             let Pos(i, j) = input.home[pi];
@@ -451,6 +456,7 @@ impl SolverInfo {
             &people_around_cell,
             &start_time,
             &time_limit,
+            get_shikiichi,
         );
 
         let high_income_pair_list = Self::create_high_income_pair_list(
@@ -459,6 +465,7 @@ impl SolverInfo {
             &people_around_cell,
             &start_time,
             &time_limit,
+            get_shikiichi,
         );
 
         Self {
@@ -469,30 +476,17 @@ impl SolverInfo {
         }
     }
 
-    // HACK 再考余地あり
-    fn get_shikiichi(_m: usize) -> usize {
-        // if m < 80 {
-        //     4
-        // } else if m <= 170 {
-        //     5
-        // } else if m <= 1300 {
-        //     10
-        // } else {
-        //     10
-        // }
-        10
-    }
-
     fn create_yoi_pair_list(
         input: &SolverInput,
         total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
         people_around_cell: &Vec<Vec<Vec<usize>>>,
         start_time: &Instant,
         time_limit: &Duration,
+        get_shikiichi: fn(usize) -> usize,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
 
-        let shikiichi = Self::get_shikiichi(input.m);
+        let shikiichi = get_shikiichi(input.m);
 
         for i in 0..300 {
             if start_time.elapsed() >= *time_limit {
@@ -607,9 +601,10 @@ impl SolverInfo {
         people_around_cell: &Vec<Vec<Vec<usize>>>,
         start_time: &Instant,
         time_limit: &Duration,
+        get_shikiichi: fn(usize) -> usize,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
-        let shikiichi = Self::get_shikiichi(input.m);
+        let shikiichi = get_shikiichi(input.m);
         for i in 0..300 {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
@@ -758,7 +753,7 @@ impl<'a> Solver<'a> {
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         Self {
             input,
-            info: SolverInfo::new(input, time_limit, start_time),
+            info: SolverInfo::new(input, time_limit, start_time, |_: usize| 10),
             state: SolverState::new(input),
             best_actions: vec![Action::DoNothing; input.t],
         }
@@ -1451,11 +1446,11 @@ impl<'a> Solver<'a> {
         self.state = SolverState::new(self.input);
     }
 
-    fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
+    fn solve(&mut self, time_limit: &Duration, start_time: &Instant) -> i64 {
         let mut best_score = self.input.k as i64;
         eprintln!("{}", start_time.elapsed().as_millis());
 
-        // self.solve4(time_limit, start_time, &mut best_score);
+        // self._solve4(time_limit, start_time, &mut best_score);
 
         // for _i in 0..50 {
         //     if start_time.elapsed() >= *time_limit {
@@ -1476,19 +1471,44 @@ impl<'a> Solver<'a> {
 
         self.solve1(time_limit, start_time, &mut best_score);
 
-        self.print_best_actions();
-        println!("#time: {}", start_time.elapsed().as_millis());
-        println!("#score: {}", best_score);
+        // HACK 再考余地あり
+        // let get_shikiichi = |_: usize| 5;
+
+        // self.info = SolverInfo::new(self.input, time_limit, start_time, get_shikiichi);
+
+        // for _i in 0..10 {
+        //     if start_time.elapsed() >= *time_limit {
+        //         eprintln!("time limit shikiichi 5");
+        //         break;
+        //     }
+
+        //     self.state = SolverState::new(self.input);
+        //     self._solve3(time_limit, start_time, &mut best_score);
+
+        //     if start_time.elapsed() >= *time_limit {
+        //         eprintln!("time limit shikiichi 5");
+        //         break;
+        //     }
+
+        //     self.state = SolverState::new(self.input);
+        //     self.solve2(time_limit, start_time, &mut best_score);
+        // }
+
+        best_score
     }
 }
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(2910);
+    let time_limit = Duration::from_millis(2900);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
 
     let mut solver = Solver::new(&input, &time_limit, &start_time);
-    solver.solve(&time_limit, &start_time);
+    let best_score = solver.solve(&time_limit, &start_time);
+
+    solver.print_best_actions();
+    println!("#time: {}", start_time.elapsed().as_millis());
+    println!("#score: {}", best_score);
 }
