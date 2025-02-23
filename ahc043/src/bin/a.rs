@@ -1181,21 +1181,96 @@ impl<'a> Solver<'a> {
 
     // 周辺に建物が多い区画を順に試す
     fn solve2(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
-        let mut cnt = 150;
+        let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
-        while cnt > 30 {
+        let yoi_pair_list = self
+            .info
+            .yoi_pair_list
+            .iter()
+            .take(rng.gen_range(25..35))
+            .map(|(_, pair)| *pair)
+            .chain(
+                self.info
+                    .high_income_pair_list
+                    .iter()
+                    .take(rng.gen_range(25..35))
+                    .map(|(_, pair)| *pair),
+            )
+            .collect::<Vec<_>>();
+
+        while cnt > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
 
-            let pi_list_list = self
+            let yoi_pair_list = yoi_pair_list
+                .iter()
+                .enumerate()
+                .filter(|_| rng.gen_range(0..50) < random_value)
+                .map(|(_, pair)| *pair)
+                .collect::<Vec<_>>();
+
+            let pi_list_list = yoi_pair_list
+                .iter()
+                .map(|(pos0, pos1)| {
+                    let mut ret = vec![];
+
+                    // HACK 高速化余地あり
+                    let people0 = &self.info.people_around_cell[pos0.0][pos0.1];
+                    let people1 = &self.info.people_around_cell[pos1.0][pos1.1];
+
+                    // push people0
+                    for &pi in people0.iter() {
+                        let home = self.input.home[pi];
+                        let workspace = self.input.workspace[pi];
+                        let pair = if calc_distance(&home, &pos0) <= 2 {
+                            (*pos0, workspace)
+                        } else {
+                            (*pos0, home)
+                        };
+
+                        let distance = calc_distance(&pair.0, &pair.1);
+
+                        debug_assert_eq!(distance > 2, true);
+
+                        if distance > 10 {
+                            ret.push(pair);
+                        }
+                    }
+
+                    // push people1
+                    for &pi in people1.iter() {
+                        let home = self.input.home[pi];
+                        let workspace = self.input.workspace[pi];
+                        let pair = if calc_distance(&home, &pos1) <= 2 {
+                            (*pos1, workspace)
+                        } else {
+                            (*pos1, home)
+                        };
+
+                        let distance = calc_distance(&pair.0, &pair.1);
+
+                        debug_assert_eq!(distance > 2, true);
+
+                        if distance > 10 {
+                            ret.push(pair);
+                        }
+                    }
+
+                    ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
+
+                    ret
+                })
+                .collect::<Vec<Vec<(Pos, Pos)>>>();
+
+            let pi_list_list2 = self
                 .info
                 .total_buildings_around_cells
                 .iter()
                 .enumerate()
-                .filter(|&(i, _)| i < cnt)
+                .filter(|&(i, _)| i < 80)
                 .filter(|_| rng.gen_range(50..150) < random_value)
                 .map(|(_, (_, pos))| {
                     (
@@ -1228,15 +1303,17 @@ impl<'a> Solver<'a> {
                 })
                 .collect::<Vec<Vec<(Pos, Pos)>>>();
 
-            for (_i, pi_list) in pi_list_list.iter().enumerate() {
-                let taken = self
-                    .info
-                    .yoi_pair_list
-                    .iter()
-                    .map(|(_, pair)| pair)
-                    .take(10);
-                let merged: Vec<_> = taken.chain(pi_list.iter()).cloned().collect();
+            let merged_iter = yoi_pair_list
+                .iter()
+                .chain(pi_list_list.iter().flatten())
+                .chain(pi_list_list2.iter().flatten());
 
+            for _i in 0..10 {
+                let merged: Vec<_> = merged_iter
+                    .clone()
+                    .filter(|_| rng.gen_range(50..150) < random_value)
+                    .map(|&v| v)
+                    .collect();
                 let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
                     *best_score = score;
@@ -1244,22 +1321,20 @@ impl<'a> Solver<'a> {
                 }
             }
 
-            for _ in 0..10 {
+            for _ in 0..30 {
                 let pi_list = pi_list_list
                     .iter()
-                    .filter(|_| rng.gen_range(50..150) < random_value)
+                    .filter(|_| rng.gen_range(50..120) < random_value)
                     .flatten()
                     .map(|&v| v)
                     .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
                     .collect::<Vec<_>>();
 
-                let taken = self
-                    .info
-                    .yoi_pair_list
+                let merged: Vec<_> = yoi_pair_list
                     .iter()
-                    .map(|(_, pair)| pair)
-                    .take(10);
-                let merged: Vec<_> = taken.chain(pi_list.iter()).cloned().collect();
+                    .chain(pi_list.iter())
+                    .cloned()
+                    .collect();
 
                 let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
@@ -1273,7 +1348,7 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn solve3(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn _solve3(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
         let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(30..130);
@@ -1373,7 +1448,7 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn solve4(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn _solve4(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
         let yoi_pair_list = self
             .info
             .yoi_pair_list
@@ -1394,18 +1469,20 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
         eprintln!("{}", start_time.elapsed().as_millis());
 
-        self.solve4(time_limit, start_time, &mut best_score);
+        // self.solve4(time_limit, start_time, &mut best_score);
 
-        for _i in 0..60 {
+        // for _i in 0..50 {
+        //     if start_time.elapsed() >= *time_limit {
+        //         eprintln!("time limit solve3");
+        //         break;
+        //     }
+
+        //     self.solve3(time_limit, start_time, &mut best_score);
+        // }
+
+        for _i in 0..50 {
             if start_time.elapsed() >= *time_limit {
-                break;
-            }
-
-            self.solve3(time_limit, start_time, &mut best_score);
-        }
-
-        for _i in 0..30 {
-            if start_time.elapsed() >= *time_limit {
+                eprintln!("time limit solve2");
                 break;
             }
             self.solve2(time_limit, start_time, &mut best_score);
