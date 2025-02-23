@@ -1070,6 +1070,16 @@ impl<'a> Solver<'a> {
                 }
             }
 
+            // 最後は何もしない
+            // HACK: 再検討の余地あり
+            if self.state.actions.len() > 700 {
+                if let Err(SolverError::TooManyActions) = self.buildnothing() {
+                    break;
+                } else {
+                    continue;
+                }
+            }
+
             if cfg!(feature = "debug") {
                 println!(
                     "# actions.len={}, self.money={}, self.income={}",
@@ -1153,30 +1163,6 @@ impl<'a> Solver<'a> {
             }
             self.state = SolverState::new(self.input);
         }
-
-        // {
-        //     let mut cloned_actions = self.best_actions.clone();
-        //     while let Action::DoNothing = cloned_actions[cloned_actions.len() - 1] {
-        //         cloned_actions.pop();
-        //     }
-
-        //     self.state = SolverState::new(self.input);
-
-        //     // 復元
-        //     for action in cloned_actions.iter() {
-        //         match action {
-        //             Action::DoNothing => {}
-        //             Action::Build((building, pos)) => match building {
-        //                 Building::Station => {
-        //                     let _ = self.build_station(*pos);
-        //                 }
-        //                 _ => {
-        //                     let _ = self.build_rail(building, *pos);
-        //                 }
-        //             },
-        //         }
-        //     }
-        // }
     }
 
     // 周辺に建物が多い区画を順に試す
