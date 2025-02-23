@@ -1110,7 +1110,7 @@ impl<'a> Solver<'a> {
                             }
                         }
                     }
-                    pos_pair_queue.push_back((pos0, pos1));
+                    pos_pair_queue.push_front((pos0, pos1));
                 }
                 Err(SolverError::TooManyActions) => {
                     debug_assert!(self.state.actions.len() >= self.input.t);
