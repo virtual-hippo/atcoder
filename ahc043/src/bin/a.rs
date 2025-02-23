@@ -7,6 +7,7 @@ use rand::Rng;
 
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
+const TURN: usize = 800;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Pos(usize, usize);
@@ -492,8 +493,9 @@ impl SolverInfo {
         let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
 
         let shikiichi = get_shikiichi(input.m);
+        let take_count = 250;
 
-        for i in 0..300 {
+        for i in 0..take_count {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
                 break;
@@ -504,7 +506,7 @@ impl SolverInfo {
                 continue;
             }
 
-            for j in i + 1..301 {
+            for j in i + 1..take_count + 1 {
                 if start_time.elapsed() >= *time_limit {
                     eprintln!("time limit");
                     break;
@@ -610,7 +612,9 @@ impl SolverInfo {
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
         let shikiichi = get_shikiichi(input.m);
-        for i in 0..300 {
+        let take_count = 240;
+
+        for i in 0..take_count {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
                 break;
@@ -621,7 +625,7 @@ impl SolverInfo {
                 continue;
             }
 
-            for j in i + 1..301 {
+            for j in i + 1..take_count + 1 {
                 if start_time.elapsed() >= *time_limit {
                     eprintln!("time limit");
                     break;
@@ -763,7 +767,18 @@ impl<'a> Solver<'a> {
         let state = initial_state.clone();
         Self {
             input,
-            info: SolverInfo::new(input, time_limit, start_time, |m: usize| (m * 2) / 100),
+            info: SolverInfo::new(
+                input,
+                time_limit,
+                start_time,
+                |m: usize| {
+                    if m < 170 {
+                        8
+                    } else {
+                        10
+                    }
+                },
+            ),
             initial_state,
             state,
             best_actions: vec![Action::DoNothing; input.t],
@@ -1169,7 +1184,8 @@ impl<'a> Solver<'a> {
         time_limit: &Duration,
         start_time: &Instant,
         best_score: &mut i64,
-        best_income: &mut i64,
+        best_income_with_money: &mut i64,
+        _best_state_cache: &mut SolverState,
     ) {
         for i in 0..self.input.m {
             let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
@@ -1182,8 +1198,9 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income > *best_income {
-                *best_income = income;
+            if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+                *best_income_with_money = income + self.state.money;
+                //*best_state_cache = self.state.clone();
             }
             self.state = self.initial_state.clone();
         }
@@ -1195,7 +1212,8 @@ impl<'a> Solver<'a> {
         time_limit: &Duration,
         start_time: &Instant,
         best_score: &mut i64,
-        best_income: &mut i64,
+        best_income_with_money: &mut i64,
+        _best_state_cache: &mut SolverState,
     ) {
         let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
@@ -1339,8 +1357,9 @@ impl<'a> Solver<'a> {
                     *best_score = score;
                     self.best_actions = actions.clone();
                 }
-                if income > *best_income {
-                    *best_income = income;
+                if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+                    *best_income_with_money = income + self.state.money;
+                    //*best_state_cache = self.state.clone();
                 }
             }
             self.state = self.initial_state.clone();
@@ -1353,7 +1372,8 @@ impl<'a> Solver<'a> {
         time_limit: &Duration,
         start_time: &Instant,
         best_score: &mut i64,
-        best_income: &mut i64,
+        best_income_with_money: &mut i64,
+        _best_state_cache: &mut SolverState,
     ) {
         let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
@@ -1453,8 +1473,9 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income > *best_income {
-                *best_income = income;
+            if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+                *best_income_with_money = income + self.state.money;
+                //*best_state_cache = self.state.clone();
             }
             self.state = self.initial_state.clone();
             cnt -= 1;
@@ -1466,7 +1487,8 @@ impl<'a> Solver<'a> {
         time_limit: &Duration,
         start_time: &Instant,
         best_score: &mut i64,
-        best_income: &mut i64,
+        best_income_with_money: &mut i64,
+        _best_state_cache: &mut SolverState,
     ) {
         let yoi_pair_list = self
             .info
@@ -1485,17 +1507,18 @@ impl<'a> Solver<'a> {
             *best_score = score;
             self.best_actions = actions.clone();
         }
-        if income > *best_income {
-            *best_income = income;
+        if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+            *best_income_with_money = income + self.state.money;
+            //*best_state_cache = self.state.clone();
         }
         self.state = self.initial_state.clone();
     }
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) -> i64 {
         let mut best_score = self.input.k as i64;
-        let mut best_income = 0;
-
-        eprintln!("{}", start_time.elapsed().as_millis());
+        let mut best_income_with_money = 0;
+        let mut best_state_cache = SolverState::new(&self.input);
+        eprintln!("solve satrt: {}", start_time.elapsed().as_millis());
 
         // self._solve4(time_limit, start_time, &mut best_score);
 
@@ -1509,7 +1532,7 @@ impl<'a> Solver<'a> {
         // }
 
         // while start_time.elapsed() < *time_limit - Duration::from_millis(50) {
-        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
+        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income_with_money);
         // }
 
         for _i in 0..70 {
@@ -1517,10 +1540,16 @@ impl<'a> Solver<'a> {
                 eprintln!("time limit solve2");
                 break;
             }
-            self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
+            self.solve2(
+                time_limit,
+                start_time,
+                &mut best_score,
+                &mut best_income_with_money,
+                &mut best_state_cache,
+            );
         }
 
-        // self._solve1(time_limit, start_time, &mut best_score, &mut best_income);
+        // self._solve1(time_limit, start_time, &mut best_score, &mut best_income_with_money);
 
         // HACK 再考余地あり
         // let get_shikiichi = |_: usize| 5;
@@ -1533,7 +1562,7 @@ impl<'a> Solver<'a> {
         //         break;
         //     }
 
-        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
+        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income_with_money);
         // }
 
         best_score
