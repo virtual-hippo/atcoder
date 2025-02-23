@@ -705,6 +705,8 @@ impl SolverInfo {
         new
     }
 }
+
+#[derive(Clone)]
 struct SolverState {
     is_connected: Vec<bool>,
     field: Field,
@@ -745,16 +747,20 @@ enum SolverError {
 struct Solver<'a> {
     input: &'a SolverInput,
     info: SolverInfo,
+    initial_state: SolverState,
     state: SolverState,
     best_actions: Vec<Action>,
 }
 
 impl<'a> Solver<'a> {
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
+        let initial_state = SolverState::new(input);
+        let state = initial_state.clone();
         Self {
             input,
             info: SolverInfo::new(input, time_limit, start_time, |_: usize| 10),
-            state: SolverState::new(input),
+            initial_state,
+            state,
             best_actions: vec![Action::DoNothing; input.t],
         }
     }
@@ -1156,7 +1162,7 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            self.state = SolverState::new(self.input);
+            self.state = self.initial_state.clone();
         }
     }
 
@@ -1324,7 +1330,7 @@ impl<'a> Solver<'a> {
                 }
             }
 
-            self.state = SolverState::new(self.input);
+            self.state = self.initial_state.clone();
             cnt -= 1;
         }
     }
@@ -1424,7 +1430,7 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            self.state = SolverState::new(self.input);
+            self.state = self.initial_state.clone();
             cnt -= 1;
         }
     }
@@ -1443,7 +1449,7 @@ impl<'a> Solver<'a> {
             *best_score = score;
             self.best_actions = actions.clone();
         }
-        self.state = SolverState::new(self.input);
+        self.state = self.initial_state.clone();
     }
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) -> i64 {
@@ -1500,7 +1506,7 @@ impl<'a> Solver<'a> {
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(2900);
+    let time_limit = Duration::from_millis(2930);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
