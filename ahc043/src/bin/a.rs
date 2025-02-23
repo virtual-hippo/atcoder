@@ -179,11 +179,16 @@ impl Action {
 struct Answer<'a> {
     actions: &'a Vec<Action>,
     score: i64,
+    income: i64,
 }
 
 impl<'a> Answer<'a> {
-    fn new(actions: &'a Vec<Action>, score: i64) -> Self {
-        Self { actions, score }
+    fn new(actions: &'a Vec<Action>, score: i64, income: i64) -> Self {
+        Self {
+            actions,
+            score,
+            income,
+        }
     }
 }
 
@@ -1148,7 +1153,7 @@ impl<'a> Solver<'a> {
             }
         }
 
-        Answer::new(&self.state.actions, self.state.money)
+        Answer::new(&self.state.actions, self.state.money, self.state.income)
     }
 
     fn print_best_actions(&self) {
@@ -1159,20 +1164,39 @@ impl<'a> Solver<'a> {
     }
 
     // 全ての人の家と仕事場の組み合わせを試す
-    fn solve1(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn solve1(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        best_income: &mut i64,
+    ) {
         for i in 0..self.input.m {
             let pos_pair_list = vec![(self.input.home[i], self.input.workspace[i])];
-            let Answer { actions, score } = self.execute(&time_limit, &start_time, &pos_pair_list);
+            let Answer {
+                actions,
+                score,
+                income,
+            } = self.execute(&time_limit, &start_time, &pos_pair_list);
             if score > *best_score {
                 *best_score = score;
                 self.best_actions = actions.clone();
+            }
+            if income > *best_income {
+                *best_income = income;
             }
             self.state = self.initial_state.clone();
         }
     }
 
     // 周辺に建物が多い区画を順に試す
-    fn solve2(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn solve2(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        best_income: &mut i64,
+    ) {
         let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
@@ -1306,10 +1330,17 @@ impl<'a> Solver<'a> {
                     .filter(|_| rng.gen_range(50..150) < random_value)
                     .map(|&v| v)
                     .collect();
-                let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
+                let Answer {
+                    actions,
+                    score,
+                    income,
+                } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
                     *best_score = score;
                     self.best_actions = actions.clone();
+                }
+                if income > *best_income {
+                    *best_income = income;
                 }
             }
 
@@ -1328,10 +1359,17 @@ impl<'a> Solver<'a> {
                     .cloned()
                     .collect();
 
-                let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
+                let Answer {
+                    actions,
+                    score,
+                    income,
+                } = self.execute(&time_limit, &start_time, &merged);
                 if score > *best_score {
                     *best_score = score;
                     self.best_actions = actions.clone();
+                }
+                if income > *best_income {
+                    *best_income = income;
                 }
             }
 
@@ -1340,7 +1378,13 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn _solve3(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn _solve3(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        best_income: &mut i64,
+    ) {
         let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(30..130);
@@ -1430,17 +1474,30 @@ impl<'a> Solver<'a> {
                 .cloned()
                 .collect();
 
-            let Answer { actions, score } = self.execute(&time_limit, &start_time, &merged);
+            let Answer {
+                actions,
+                score,
+                income,
+            } = self.execute(&time_limit, &start_time, &merged);
             if score > *best_score {
                 *best_score = score;
                 self.best_actions = actions.clone();
+            }
+            if income > *best_income {
+                *best_income = income;
             }
             self.state = self.initial_state.clone();
             cnt -= 1;
         }
     }
 
-    fn _solve4(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+    fn _solve4(
+        &mut self,
+        time_limit: &Duration,
+        start_time: &Instant,
+        best_score: &mut i64,
+        best_income: &mut i64,
+    ) {
         let yoi_pair_list = self
             .info
             .yoi_pair_list
@@ -1449,16 +1506,25 @@ impl<'a> Solver<'a> {
             .take(1)
             .collect::<Vec<_>>();
 
-        let Answer { actions, score } = self.execute(&time_limit, &start_time, &yoi_pair_list);
+        let Answer {
+            actions,
+            score,
+            income,
+        } = self.execute(&time_limit, &start_time, &yoi_pair_list);
         if score > *best_score {
             *best_score = score;
             self.best_actions = actions.clone();
+        }
+        if income > *best_income {
+            *best_income = income;
         }
         self.state = self.initial_state.clone();
     }
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) -> i64 {
         let mut best_score = self.input.k as i64;
+        let mut best_income = 0;
+
         eprintln!("{}", start_time.elapsed().as_millis());
 
         // self._solve4(time_limit, start_time, &mut best_score);
@@ -1477,10 +1543,10 @@ impl<'a> Solver<'a> {
                 eprintln!("time limit solve2");
                 break;
             }
-            self.solve2(time_limit, start_time, &mut best_score);
+            self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
         }
 
-        self.solve1(time_limit, start_time, &mut best_score);
+        self.solve1(time_limit, start_time, &mut best_score, &mut best_income);
 
         // HACK 再考余地あり
         // let get_shikiichi = |_: usize| 5;
