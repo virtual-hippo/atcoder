@@ -469,6 +469,20 @@ impl SolverInfo {
         }
     }
 
+    // HACK 再考余地あり
+    fn get_shikiichi(_m: usize) -> usize {
+        // if m < 80 {
+        //     4
+        // } else if m <= 170 {
+        //     5
+        // } else if m <= 1300 {
+        //     10
+        // } else {
+        //     10
+        // }
+        10
+    }
+
     fn create_yoi_pair_list(
         input: &SolverInput,
         total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
@@ -477,6 +491,9 @@ impl SolverInfo {
         time_limit: &Duration,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+
+        let shikiichi = Self::get_shikiichi(input.m);
+
         for i in 0..300 {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
@@ -484,7 +501,7 @@ impl SolverInfo {
             }
 
             // 高スコアが見込まれないものは間引く
-            if total_buildings_around_cells[i].0 < 10 {
+            if total_buildings_around_cells[i].0 < shikiichi {
                 continue;
             }
 
@@ -495,7 +512,7 @@ impl SolverInfo {
                 }
 
                 // 高スコアが見込まれないものは間引く
-                if total_buildings_around_cells[j].0 < 10 {
+                if total_buildings_around_cells[j].0 < shikiichi {
                     continue;
                 }
                 let pair = (
@@ -592,6 +609,7 @@ impl SolverInfo {
         time_limit: &Duration,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+        let shikiichi = Self::get_shikiichi(input.m);
         for i in 0..300 {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
@@ -599,7 +617,7 @@ impl SolverInfo {
             }
 
             // 高スコアが見込まれないものは間引く
-            if total_buildings_around_cells[i].0 < 10 {
+            if total_buildings_around_cells[i].0 < shikiichi {
                 continue;
             }
 
@@ -610,7 +628,7 @@ impl SolverInfo {
                 }
 
                 // 高スコアが見込まれないものは間引く
-                if total_buildings_around_cells[j].0 < 10 {
+                if total_buildings_around_cells[j].0 < shikiichi {
                     continue;
                 }
                 let pair = (
@@ -1256,7 +1274,7 @@ impl<'a> Solver<'a> {
     }
 
     fn solve3(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
-        let mut cnt = 100;
+        let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(30..130);
 
@@ -1264,13 +1282,13 @@ impl<'a> Solver<'a> {
             .info
             .yoi_pair_list
             .iter()
-            .take(30)
+            .take(rng.gen_range(25..35))
             .map(|(_, pair)| *pair)
             .chain(
                 self.info
                     .high_income_pair_list
                     .iter()
-                    .take(30)
+                    .take(rng.gen_range(25..35))
                     .map(|(_, pair)| *pair),
             )
             .collect::<Vec<_>>();
@@ -1295,6 +1313,7 @@ impl<'a> Solver<'a> {
                     let people0 = &self.info.people_around_cell[pos0.0][pos0.1];
                     let people1 = &self.info.people_around_cell[pos1.0][pos1.1];
 
+                    // push people0
                     for &pi in people0.iter() {
                         let home = self.input.home[pi];
                         let workspace = self.input.workspace[pi];
@@ -1313,6 +1332,7 @@ impl<'a> Solver<'a> {
                         }
                     }
 
+                    // push people1
                     for &pi in people1.iter() {
                         let home = self.input.home[pi];
                         let workspace = self.input.workspace[pi];
@@ -1376,7 +1396,7 @@ impl<'a> Solver<'a> {
 
         self.solve4(time_limit, start_time, &mut best_score);
 
-        for _i in 0..30 {
+        for _i in 0..60 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
