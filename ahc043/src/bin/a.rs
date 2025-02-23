@@ -3,6 +3,8 @@ use proconio::{fastout, input};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
+//use rustc_hash::FxHashSet;
+
 use rand::Rng;
 
 const COST_STATION: i64 = 5000;
@@ -462,6 +464,7 @@ impl SolverInfo {
             &start_time,
             &time_limit,
             get_shikiichi,
+            //&FxHashSet::default(),
         );
 
         let high_income_pair_list = Self::create_high_income_pair_list(
@@ -471,6 +474,7 @@ impl SolverInfo {
             &start_time,
             &time_limit,
             get_shikiichi,
+            //&FxHashSet::default(),
         );
 
         Self {
@@ -488,6 +492,7 @@ impl SolverInfo {
         start_time: &Instant,
         time_limit: &Duration,
         get_shikiichi: fn(usize) -> usize,
+        //_tukindekiru_people: &FxHashSet<usize>,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
 
@@ -535,6 +540,7 @@ impl SolverInfo {
                     // pos1, pos2 両方に属する人を探す
                     let peoples = people1
                         .iter()
+                        //.filter(|&pi1| !_tukindekiru_people.contains(pi1))
                         .filter(|&pi1| people2.contains(pi1))
                         .collect::<Vec<_>>();
 
@@ -608,6 +614,7 @@ impl SolverInfo {
         start_time: &Instant,
         time_limit: &Duration,
         get_shikiichi: fn(usize) -> usize,
+        //_tukindekiru_people: &FxHashSet<usize>,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
         let shikiichi = get_shikiichi(input.m);
@@ -652,6 +659,7 @@ impl SolverInfo {
                     // pos1, pos2 両方に属する人を探す
                     let peoples = people1
                         .iter()
+                        //.filter(|&pi1| !_tukindekiru_people.contains(pi1))
                         .filter(|&pi1| people2.contains(pi1))
                         .collect::<Vec<_>>();
 
@@ -758,11 +766,12 @@ struct Solver<'a> {
     initial_state: SolverState,
     state: SolverState,
     best_actions: Vec<Action>,
+    limit: usize,
 }
 
 impl<'a> Solver<'a> {
     const MID: usize = 300;
-    const TEMP: i64 = 100;
+    const TEMP: i64 = 50;
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         let initial_state = SolverState::new(input);
         let state = initial_state.clone();
@@ -772,17 +781,12 @@ impl<'a> Solver<'a> {
                 input,
                 time_limit,
                 start_time,
-                |m: usize| {
-                    if m < 170 {
-                        8
-                    } else {
-                        10
-                    }
-                },
+                |m: usize| if m < 170 { 8 } else { 10 },
             ),
             initial_state,
             state,
             best_actions: vec![Action::DoNothing; input.t],
+            limit: Self::MID,
         }
     }
 
@@ -1075,7 +1079,7 @@ impl<'a> Solver<'a> {
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
-        while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
+        while self.state.actions.len() < self.limit && pos_pair_queue.len() > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -1099,7 +1103,7 @@ impl<'a> Solver<'a> {
 
             // 最後は何もしない
             // HACK: 再検討の余地あり
-            if self.state.actions.len() > 700 {
+            if self.state.actions.len() > 730 {
                 if let Err(SolverError::TooManyActions) = self.buildnothing() {
                     break;
                 } else {
@@ -1130,7 +1134,7 @@ impl<'a> Solver<'a> {
             match result_connect {
                 Ok(_) => {
                     // eprintln!("# pos_pair_queue.len()={}", pos_pair_queue.len());
-                    if rng.gen_range(50..150) < random_value {
+                    if rng.gen_range(30..90) < random_value {
                         pos_pair_queue.make_contiguous().sort_by(|a, b| {
                             calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1))
                         });
@@ -1139,8 +1143,7 @@ impl<'a> Solver<'a> {
                 Err(SolverError::NotEnoughMoney(cost)) => {
                     // eprintln!("# NotEnoughMoney cost={}", cost);
                     if cost == COST_RAIL {
-                        while self.state.actions.len() < self.input.t
-                            && self.state.money < COST_RAIL
+                        while self.state.actions.len() < self.limit && self.state.money < COST_RAIL
                         {
                             if let Err(SolverError::TooManyActions) = self.buildnothing() {
                                 break;
@@ -1150,20 +1153,20 @@ impl<'a> Solver<'a> {
                     pos_pair_queue.push_front((pos0, pos1));
                 }
                 Err(SolverError::TooManyActions) => {
-                    debug_assert!(self.state.actions.len() >= self.input.t);
+                    debug_assert!(self.state.actions.len() >= self.limit);
                     break;
                 }
             }
         }
 
-        debug_assert!(self.state.actions.len() <= self.input.t);
+        debug_assert!(self.state.actions.len() <= self.limit);
         // もしターン数を超えてしまっていたら取り除く
-        while self.state.actions.len() > self.input.t {
+        while self.state.actions.len() > self.limit {
             self.state.actions.pop();
         }
 
         // もしターン数を超えていない場合はDoNothingを追加
-        while self.state.actions.len() < self.input.t {
+        while self.state.actions.len() < self.limit {
             if let Err(SolverError::TooManyActions) = self.buildnothing() {
                 break;
             }
@@ -1172,7 +1175,10 @@ impl<'a> Solver<'a> {
         Answer::new(&self.state.actions, self.state.money, self.state.income)
     }
 
-    fn print_best_actions(&self) {
+    fn print_best_actions(&mut self) {
+        while self.best_actions.len() < self.input.t {
+            self.best_actions.push(Action::DoNothing);
+        }
         println!(
             "{}",
             self.best_actions.iter().map(|a| a.to_string()).join("\n")
@@ -1199,9 +1205,11 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
+            if self.state.actions.len() < self.input.t
+                && income + self.state.money > *best_income_with_money - Self::TEMP
+            {
                 *best_income_with_money = income + self.state.money;
-                //*best_state_cache = self.state.clone();
+                *_best_state_cache = self.state.clone();
             }
             self.state = self.initial_state.clone();
         }
@@ -1216,7 +1224,6 @@ impl<'a> Solver<'a> {
         best_income_with_money: &mut i64,
         _best_state_cache: &mut SolverState,
     ) {
-        let mut cnt = 80;
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
@@ -1224,150 +1231,145 @@ impl<'a> Solver<'a> {
             .info
             .yoi_pair_list
             .iter()
-            .take(rng.gen_range(25..35))
+            .take(rng.gen_range(10..21))
             .map(|(_, pair)| *pair)
             .chain(
                 self.info
                     .high_income_pair_list
                     .iter()
-                    .take(rng.gen_range(25..35))
+                    .take(rng.gen_range(10..21))
                     .map(|(_, pair)| *pair),
             )
             .collect::<Vec<_>>();
 
-        while cnt > 0 {
+        let yoi_pair_list = yoi_pair_list
+            .iter()
+            .enumerate()
+            .map(|(_, pair)| *pair)
+            .collect::<Vec<_>>();
+
+        let pi_list_list = yoi_pair_list
+            .iter()
+            .map(|(pos0, pos1)| {
+                let mut ret = vec![];
+
+                // HACK 高速化余地あり
+                let people0 = &self.info.people_around_cell[pos0.0][pos0.1];
+                let people1 = &self.info.people_around_cell[pos1.0][pos1.1];
+
+                // push people0
+                for &pi in people0.iter() {
+                    let home = self.input.home[pi];
+                    let workspace = self.input.workspace[pi];
+                    let pair = if calc_distance(&home, &pos0) <= 2 {
+                        (*pos0, workspace)
+                    } else {
+                        (*pos0, home)
+                    };
+
+                    let distance = calc_distance(&pair.0, &pair.1);
+
+                    debug_assert_eq!(distance > 2, true);
+
+                    if distance > 10 {
+                        ret.push(pair);
+                    }
+                }
+
+                // push people1
+                for &pi in people1.iter() {
+                    let home = self.input.home[pi];
+                    let workspace = self.input.workspace[pi];
+                    let pair = if calc_distance(&home, &pos1) <= 2 {
+                        (*pos1, workspace)
+                    } else {
+                        (*pos1, home)
+                    };
+
+                    let distance = calc_distance(&pair.0, &pair.1);
+
+                    debug_assert_eq!(distance > 2, true);
+
+                    if distance > 10 {
+                        ret.push(pair);
+                    }
+                }
+
+                ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
+
+                ret
+            })
+            .collect::<Vec<Vec<(Pos, Pos)>>>();
+
+        let pi_list_list2 = self
+            .info
+            .total_buildings_around_cells
+            .iter()
+            .take(rng.gen_range(10..21))
+            .map(|(_, pos)| {
+                (
+                    Pos(pos.0, pos.1),
+                    &self.info.people_around_cell[pos.0][pos.1],
+                )
+            })
+            .map(|(pos, people)| {
+                let mut ret = vec![];
+                for &pi in people.iter() {
+                    let home = self.input.home[pi];
+                    let workspace = self.input.workspace[pi];
+                    let pair = if calc_distance(&home, &pos) <= 2 {
+                        (pos, workspace)
+                    } else {
+                        (pos, home)
+                    };
+
+                    let distance = calc_distance(&pair.0, &pair.1);
+
+                    debug_assert_eq!(distance > 2, true);
+
+                    if distance > 10 {
+                        ret.push(pair);
+                    }
+                }
+                ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
+
+                ret.iter().take(rng.gen_range(8..15)).cloned().collect()
+            })
+            .collect::<Vec<Vec<(Pos, Pos)>>>();
+
+        let merged_iter = yoi_pair_list
+            .iter()
+            .chain(pi_list_list.iter().flatten())
+            .chain(pi_list_list2.iter().flatten());
+
+        for _i in 0..50 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
 
-            let yoi_pair_list = yoi_pair_list
-                .iter()
-                .enumerate()
-                .filter(|_| rng.gen_range(0..50) < random_value)
-                .map(|(_, pair)| *pair)
-                .collect::<Vec<_>>();
-
-            let pi_list_list = yoi_pair_list
-                .iter()
-                .map(|(pos0, pos1)| {
-                    let mut ret = vec![];
-
-                    // HACK 高速化余地あり
-                    let people0 = &self.info.people_around_cell[pos0.0][pos0.1];
-                    let people1 = &self.info.people_around_cell[pos1.0][pos1.1];
-
-                    // push people0
-                    for &pi in people0.iter() {
-                        let home = self.input.home[pi];
-                        let workspace = self.input.workspace[pi];
-                        let pair = if calc_distance(&home, &pos0) <= 2 {
-                            (*pos0, workspace)
-                        } else {
-                            (*pos0, home)
-                        };
-
-                        let distance = calc_distance(&pair.0, &pair.1);
-
-                        debug_assert_eq!(distance > 2, true);
-
-                        if distance > 10 {
-                            ret.push(pair);
-                        }
-                    }
-
-                    // push people1
-                    for &pi in people1.iter() {
-                        let home = self.input.home[pi];
-                        let workspace = self.input.workspace[pi];
-                        let pair = if calc_distance(&home, &pos1) <= 2 {
-                            (*pos1, workspace)
-                        } else {
-                            (*pos1, home)
-                        };
-
-                        let distance = calc_distance(&pair.0, &pair.1);
-
-                        debug_assert_eq!(distance > 2, true);
-
-                        if distance > 10 {
-                            ret.push(pair);
-                        }
-                    }
-
-                    ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
-
-                    ret
-                })
-                .collect::<Vec<Vec<(Pos, Pos)>>>();
-
-            let pi_list_list2 = self
-                .info
-                .total_buildings_around_cells
-                .iter()
-                .enumerate()
-                .filter(|&(i, _)| i < 80)
+            let merged: Vec<_> = merged_iter
+                .clone()
                 .filter(|_| rng.gen_range(50..150) < random_value)
-                .map(|(_, (_, pos))| {
-                    (
-                        Pos(pos.0, pos.1),
-                        &self.info.people_around_cell[pos.0][pos.1],
-                    )
-                })
-                .map(|(pos, people)| {
-                    let mut ret = vec![];
-                    for &pi in people.iter() {
-                        let home = self.input.home[pi];
-                        let workspace = self.input.workspace[pi];
-                        let pair = if calc_distance(&home, &pos) <= 2 {
-                            (pos, workspace)
-                        } else {
-                            (pos, home)
-                        };
-
-                        let distance = calc_distance(&pair.0, &pair.1);
-
-                        debug_assert_eq!(distance > 2, true);
-
-                        if distance > 10 {
-                            ret.push(pair);
-                        }
-                    }
-                    ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
-
-                    ret
-                })
-                .collect::<Vec<Vec<(Pos, Pos)>>>();
-
-            let merged_iter = yoi_pair_list
-                .iter()
-                .chain(pi_list_list.iter().flatten())
-                .chain(pi_list_list2.iter().flatten());
-
-            for _i in 0..50 {
-                let merged: Vec<_> = merged_iter
-                    .clone()
-                    .filter(|_| rng.gen_range(50..150) < random_value)
-                    .map(|&v| v)
-                    .collect();
-                let Answer {
-                    actions,
-                    score,
-                    income,
-                } = self.execute(&time_limit, &start_time, &merged);
-                if score > *best_score {
-                    *best_score = score;
-                    self.best_actions = actions.clone();
-                }
-
-                if self.input.t < Self::MID
-                    && income + self.state.money > *best_income_with_money - Self::TEMP
-                {
-                    *best_income_with_money = income + self.state.money;
-                    *_best_state_cache = self.state.clone();
-                }
+                .map(|&v| v)
+                .collect();
+            let Answer {
+                actions,
+                score,
+                income,
+            } = self.execute(&time_limit, &start_time, &merged);
+            if score > *best_score {
+                *best_score = score;
+                self.best_actions = actions.clone();
             }
+
+            if self.state.actions.len() < self.input.t
+                && income + self.state.money > *best_income_with_money - Self::TEMP
+            {
+                *best_income_with_money = income + self.state.money;
+                *_best_state_cache = self.state.clone();
+            }
+
             self.state = self.initial_state.clone();
-            cnt -= 1;
         }
     }
 
@@ -1522,32 +1524,21 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
         let mut best_income_with_money = 0;
         let mut best_state_cache = SolverState::new(&self.input);
-        eprintln!("solve satrt: {}", start_time.elapsed().as_millis());
+        eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
 
         // self._solve4(time_limit, start_time, &mut best_score);
 
-        // for _i in 0..50 {
-        //     if start_time.elapsed() >= *time_limit {
-        //         eprintln!("time limit solve3");
-        //         break;
-        //     }
-
-        //     self.solve3(time_limit, start_time, &mut best_score);
-        // }
-
-        // while start_time.elapsed() < *time_limit - Duration::from_millis(50) {
-        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income_with_money);
-        // }
-
-        for _i in 0..4 {
-            eprintln!("_i: {}", _i);
+        for _i in 0..15 {
+            println!("#_i: {}", _i);
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
                 return best_score;
             }
 
-            // 初期状態だけいろいろ試してみる
-            for _ in 0..30 {
+            // 途中時点の最適な値を求める
+            // limit を一時的に MIDにする
+            self.limit = Self::MID;
+            for _ in 0..5 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1556,6 +1547,9 @@ impl<'a> Solver<'a> {
                     &mut best_state_cache,
                 );
             }
+            // limit を元に戻す
+            self.limit = self.input.t;
+            println!("#init serach: {} ms", start_time.elapsed().as_millis());
 
             while best_state_cache.actions.last() == Some(&Action::DoNothing) {
                 best_state_cache.actions.pop();
@@ -1569,7 +1563,9 @@ impl<'a> Solver<'a> {
 
             self.initial_state = best_state_cache.clone();
 
-            for _ in 0..30 {
+            // TODO: 現在の盤面に適したinfo に再設定する
+
+            for _ in 0..5 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1578,10 +1574,13 @@ impl<'a> Solver<'a> {
                     &mut best_state_cache,
                 );
             }
+
+            self.initial_state = SolverState::new(&self.input);
         }
 
         // self._solve1(time_limit, start_time, &mut best_score, &mut best_income_with_money);
 
+        // TODO: m が小さい場合に閾値を下げてみる
         // HACK 再考余地あり
         // let get_shikiichi = |_: usize| 5;
 
@@ -1602,7 +1601,7 @@ impl<'a> Solver<'a> {
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(2930);
+    let time_limit = Duration::from_millis(2940);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
