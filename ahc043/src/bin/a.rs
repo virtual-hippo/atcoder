@@ -1,5 +1,5 @@
 use itertools::*;
-use proconio::{fastout, input};
+use proconio::input;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
@@ -474,7 +474,7 @@ impl SolverInfo {
             &start_time,
             &time_limit,
             get_shikiichi,
-            //&FxHashSet::default(),
+            // &FxHashSet::default(),
         );
 
         Self {
@@ -614,7 +614,7 @@ impl SolverInfo {
         start_time: &Instant,
         time_limit: &Duration,
         get_shikiichi: fn(usize) -> usize,
-        //_tukindekiru_people: &FxHashSet<usize>,
+        // _tukindekiru_people: &FxHashSet<usize>,
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
         let shikiichi = get_shikiichi(input.m);
@@ -733,6 +733,7 @@ struct SolverState {
     station_queue: VecDeque<Pos>,
     // 建設住みの駅
     stations: Vec<Pos>,
+    //tukindekiru_people: FxHashSet<usize>,
 }
 
 impl SolverState {
@@ -752,6 +753,7 @@ impl SolverState {
             income: 0,
             station_queue: VecDeque::new(),
             stations: Vec::new(),
+            //tukindekiru_people: FxHashSet::default(),
         }
     }
 }
@@ -770,7 +772,7 @@ struct Solver<'a> {
 }
 
 impl<'a> Solver<'a> {
-    const MID: usize = 300;
+    const MID: usize = 400;
     const TEMP: i64 = 50;
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         let initial_state = SolverState::new(input);
@@ -799,6 +801,7 @@ impl<'a> Solver<'a> {
                     .is_connected(self.input.home[i], self.input.workspace[i])
             {
                 self.state.is_connected[i] = true;
+                //self.state.tukindekiru_people.insert(i);
             }
         }
     }
@@ -814,7 +817,7 @@ impl<'a> Solver<'a> {
         if self.state.money < COST_RAIL {
             return Err(SolverError::NotEnoughMoney(COST_RAIL));
         }
-        if self.state.actions.len() >= self.input.t {
+        if self.state.actions.len() >= self.limit {
             return Err(SolverError::TooManyActions);
         }
 
@@ -871,7 +874,7 @@ impl<'a> Solver<'a> {
             self.state.station_queue.push_back(Pos(r, c));
             return Err(SolverError::NotEnoughMoney(COST_STATION));
         }
-        if self.state.actions.len() >= self.input.t {
+        if self.state.actions.len() >= self.limit {
             return Err(SolverError::TooManyActions);
         }
 
@@ -897,7 +900,7 @@ impl<'a> Solver<'a> {
     }
 
     fn buildnothing(&mut self) -> Result<(), SolverError> {
-        if self.state.actions.len() >= self.input.t {
+        if self.state.actions.len() >= self.limit {
             return Err(SolverError::TooManyActions);
         }
         self.state.actions.push(Action::DoNothing);
@@ -923,7 +926,7 @@ impl<'a> Solver<'a> {
             return Ok(());
         }
 
-        if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.input.t {
+        if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.limit {
             return Err(SolverError::TooManyActions);
         }
 
@@ -1205,7 +1208,7 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if self.state.actions.len() < self.input.t
+            if self.state.actions.len() < self.limit
                 && income + self.state.money > *best_income_with_money - Self::TEMP
             {
                 *best_income_with_money = income + self.state.money;
@@ -1226,6 +1229,7 @@ impl<'a> Solver<'a> {
     ) {
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
+        let limit = self.limit;
 
         let yoi_pair_list = self
             .info
@@ -1357,12 +1361,14 @@ impl<'a> Solver<'a> {
                 score,
                 income,
             } = self.execute(&time_limit, &start_time, &merged);
-            if score > *best_score {
+
+            // TODO: Fix hard coding
+            if score > *best_score && limit == 800 {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
 
-            if self.state.actions.len() < self.input.t
+            if limit == Self::MID
                 && income + self.state.money > *best_income_with_money - Self::TEMP
             {
                 *best_income_with_money = income + self.state.money;
@@ -1479,9 +1485,9 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
+            if income + self.state.money > *best_income_with_money && self.limit == Self::MID {
                 *best_income_with_money = income + self.state.money;
-                //*best_state_cache = self.state.clone();
+                *_best_state_cache = self.state.clone();
             }
             self.state = self.initial_state.clone();
             cnt -= 1;
@@ -1513,7 +1519,7 @@ impl<'a> Solver<'a> {
             *best_score = score;
             self.best_actions = actions.clone();
         }
-        if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
+        if income + self.state.money > *best_income_with_money && self.limit == Self::MID {
             *best_income_with_money = income + self.state.money;
             //*best_state_cache = self.state.clone();
         }
@@ -1538,7 +1544,7 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..5 {
+            for _ in 0..7 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1546,15 +1552,11 @@ impl<'a> Solver<'a> {
                     &mut best_income_with_money,
                     &mut best_state_cache,
                 );
+                self.state = self.initial_state.clone();
             }
             // limit を元に戻す
             self.limit = self.input.t;
             println!("#init serach: {} ms", start_time.elapsed().as_millis());
-
-            while best_state_cache.actions.last() == Some(&Action::DoNothing) {
-                best_state_cache.actions.pop();
-                best_state_cache.money -= best_state_cache.income;
-            }
 
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
@@ -1563,9 +1565,34 @@ impl<'a> Solver<'a> {
 
             self.initial_state = best_state_cache.clone();
 
-            // TODO: 現在の盤面に適したinfo に再設定する
+            // 末尾の DoNothing を削除する
+            while best_state_cache.actions.last() == Some(&Action::DoNothing) {
+                best_state_cache.actions.pop();
+                best_state_cache.money -= best_state_cache.income;
+            }
 
-            for _ in 0..5 {
+            // 現在の盤面に適したinfo に再設定する
+            // SolverInfo::create_yoi_pair_list(
+            //     &self.input,
+            //     &self.info.total_buildings_around_cells,
+            //     &self.info.people_around_cell,
+            //     &start_time,
+            //     &time_limit,
+            //     |_: usize| 10,
+            //     &best_state_cache.tukindekiru_people,
+            // );
+            // self.info.high_income_pair_list = SolverInfo::create_high_income_pair_list(
+            //     &self.input,
+            //     &self.info.total_buildings_around_cells,
+            //     &self.info.people_around_cell,
+            //     &start_time,
+            //     &time_limit,
+            //     |_: usize| 10,
+            //     &best_state_cache.tukindekiru_people,
+            // );
+
+            for _ in 0..3 {
+                self.state = self.initial_state.clone();
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1576,6 +1603,7 @@ impl<'a> Solver<'a> {
             }
 
             self.initial_state = SolverState::new(&self.input);
+            self.state = self.initial_state.clone();
         }
 
         // self._solve1(time_limit, start_time, &mut best_score, &mut best_income_with_money);
@@ -1599,9 +1627,8 @@ impl<'a> Solver<'a> {
     }
 }
 
-#[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(2940);
+    let time_limit = Duration::from_millis(2950);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
@@ -1609,7 +1636,7 @@ fn main() {
     let mut solver = Solver::new(&input, &time_limit, &start_time);
     let best_score = solver.solve(&time_limit, &start_time);
 
-    solver.print_best_actions();
     println!("#time: {}", start_time.elapsed().as_millis());
     println!("#score: {}", best_score);
+    solver.print_best_actions();
 }
