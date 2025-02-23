@@ -7,7 +7,6 @@ use rand::Rng;
 
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
-const TURN: usize = 800;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Pos(usize, usize);
@@ -79,7 +78,7 @@ fn calc_distance(pos1: &Pos, pos2: &Pos) -> i64 {
     (pos2.0 - pos1.0).abs() + (pos2.1 - pos1.1).abs()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Building {
     Station,
     HorizontalRail,
@@ -159,7 +158,7 @@ impl Building {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 enum Action {
     DoNothing,
     Build((Building, Pos)),
@@ -762,6 +761,8 @@ struct Solver<'a> {
 }
 
 impl<'a> Solver<'a> {
+    const MID: usize = 300;
+    const TEMP: i64 = 100;
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         let initial_state = SolverState::new(input);
         let state = initial_state.clone();
@@ -1198,7 +1199,7 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+            if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
                 *best_income_with_money = income + self.state.money;
                 //*best_state_cache = self.state.clone();
             }
@@ -1357,9 +1358,12 @@ impl<'a> Solver<'a> {
                     *best_score = score;
                     self.best_actions = actions.clone();
                 }
-                if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+
+                if self.input.t < Self::MID
+                    && income + self.state.money > *best_income_with_money - Self::TEMP
+                {
                     *best_income_with_money = income + self.state.money;
-                    //*best_state_cache = self.state.clone();
+                    *_best_state_cache = self.state.clone();
                 }
             }
             self.state = self.initial_state.clone();
@@ -1473,7 +1477,7 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
-            if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+            if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
                 *best_income_with_money = income + self.state.money;
                 //*best_state_cache = self.state.clone();
             }
@@ -1507,7 +1511,7 @@ impl<'a> Solver<'a> {
             *best_score = score;
             self.best_actions = actions.clone();
         }
-        if income + self.state.money > *best_income_with_money && self.input.t < TURN {
+        if income + self.state.money > *best_income_with_money && self.input.t < Self::MID {
             *best_income_with_money = income + self.state.money;
             //*best_state_cache = self.state.clone();
         }
@@ -1535,18 +1539,45 @@ impl<'a> Solver<'a> {
         //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income_with_money);
         // }
 
-        for _i in 0..70 {
-            if start_time.elapsed() >= *time_limit {
-                eprintln!("time limit solve2");
-                break;
+        for _i in 0..4 {
+            eprintln!("_i: {}", _i);
+            if start_time.elapsed() > *time_limit {
+                eprintln!("time limit");
+                return best_score;
             }
-            self.solve2(
-                time_limit,
-                start_time,
-                &mut best_score,
-                &mut best_income_with_money,
-                &mut best_state_cache,
-            );
+
+            // 初期状態だけいろいろ試してみる
+            for _ in 0..30 {
+                self.solve2(
+                    time_limit,
+                    start_time,
+                    &mut best_score,
+                    &mut best_income_with_money,
+                    &mut best_state_cache,
+                );
+            }
+
+            while best_state_cache.actions.last() == Some(&Action::DoNothing) {
+                best_state_cache.actions.pop();
+                best_state_cache.money -= best_state_cache.income;
+            }
+
+            if start_time.elapsed() > *time_limit {
+                eprintln!("time limit");
+                return best_score;
+            }
+
+            self.initial_state = best_state_cache.clone();
+
+            for _ in 0..30 {
+                self.solve2(
+                    time_limit,
+                    start_time,
+                    &mut best_score,
+                    &mut best_income_with_money,
+                    &mut best_state_cache,
+                );
+            }
         }
 
         // self._solve1(time_limit, start_time, &mut best_score, &mut best_income_with_money);
