@@ -1,6 +1,5 @@
 use itertools::*;
 use proconio::{fastout, input};
-use rustc_hash::FxHashSet;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
@@ -523,7 +522,6 @@ impl SolverInfo {
                 break;
             }
 
-            // HACK 間引き方考察余地あり
             // 高スコアが見込まれないものは間引く
             if total_buildings_around_cells[i].0 < 10 {
                 continue;
@@ -548,7 +546,7 @@ impl SolverInfo {
                 let kenchiku_cost = (distance - 1) * COST_RAIL + COST_STATION * 2;
                 let money = input.k as i64;
 
-                // スコアが高いものを計算する
+                // スコアが多いものを計算する
                 let income = {
                     let building_count = distance + 1;
                     let nothing_count = (input.t as i64) - building_count;
@@ -585,8 +583,6 @@ impl SolverInfo {
 
         yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
 
-        // 距離が近い点はまとめる
-        // HACK まとめないほうがスコア上がる可能性もある
         let new = {
             let mut new = vec![];
             let mut exists = vec![];
@@ -626,84 +622,8 @@ impl SolverInfo {
 
         new
     }
-
-    fn create_high_income_list(
-        input: &SolverInput,
-        total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
-        people_around_cell: &Vec<Vec<Vec<usize>>>,
-        start_time: &Instant,
-        time_limit: &Duration,
-        t: usize,
-        connected_people: &FxHashSet<usize>,
-    ) -> Vec<(i64, (Pos, Pos))> {
-        let mut income_list = Vec::with_capacity(total_buildings_around_cells.len());
-        for i in 0..300 {
-            if start_time.elapsed() >= *time_limit {
-                eprintln!("time limit");
-                break;
-            }
-
-            // HACK 間引き方考察余地あり
-            // 高スコアが見込まれないものは間引く
-            if total_buildings_around_cells[i].0 < 10 {
-                continue;
-            }
-
-            for j in i + 1..301 {
-                if start_time.elapsed() >= *time_limit {
-                    eprintln!("time limit");
-                    break;
-                }
-
-                // 高スコアが見込まれないものは間引く
-                if total_buildings_around_cells[j].0 < 10 {
-                    continue;
-                }
-                let pair = (
-                    Pos::new(total_buildings_around_cells[i].1),
-                    Pos::new(total_buildings_around_cells[j].1),
-                );
-
-                let distance = calc_distance(&pair.0, &pair.1);
-
-                // 収入が増えるものを計算する
-                let income = {
-                    let building_count = distance + 1;
-                    let nothing_count = ((t as i64) - building_count).max(0);
-
-                    let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
-                    let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
-
-                    // pos1, pos2 両方に属する人を探す
-                    let peoples = people1
-                        .iter()
-                        .filter(|&pi1| people2.contains(pi1))
-                        .collect::<Vec<_>>();
-
-                    let income = peoples
-                        .iter()
-                        .filter(|&&pi| connected_people.contains(pi))
-                        .filter(|&&pi| {
-                            let home = input.home[*pi];
-                            let workspace = input.workspace[*pi];
-                            can_tsukin_if_build_station(&home, &workspace, &pair)
-                        })
-                        .map(|pi| input.distance[**pi])
-                        .sum::<i64>();
-
-                    income * nothing_count
-                };
-                income_list.push((income, pair));
-            }
-        }
-
-        income_list.sort_by(|a, b| b.0.cmp(&a.0));
-
-        income_list
-    }
 }
 struct SolverState {
-    // 人が通勤できるかどうか
     is_connected: Vec<bool>,
     field: Field,
     money: i64,
@@ -713,8 +633,6 @@ struct SolverState {
     station_queue: VecDeque<Pos>,
     // 建設住みの駅
     stations: Vec<Pos>,
-    // 通勤できる人々
-    connected_people: FxHashSet<usize>,
 }
 
 impl SolverState {
@@ -734,7 +652,6 @@ impl SolverState {
             income: 0,
             station_queue: VecDeque::new(),
             stations: Vec::new(),
-            connected_people: FxHashSet::default(),
         }
     }
 }
@@ -769,7 +686,6 @@ impl<'a> Solver<'a> {
                     .is_connected(self.input.home[i], self.input.workspace[i])
             {
                 self.state.is_connected[i] = true;
-                self.state.connected_people.insert(i);
             }
         }
     }
@@ -898,7 +814,7 @@ impl<'a> Solver<'a> {
             let people1 = &self.info.people_around_cell[pos0.0][pos0.1];
             let people2 = &self.info.people_around_cell[pos1.0][pos1.1];
 
-            // pos1, pos2 両方に属する人を探す
+            // pos1, pos2 それぞれの周辺の人々で繋がっていない人を探す
             let is_not_connected_people_count = people1
                 .iter()
                 .filter(|&pi| !self.state.is_connected[*pi])
@@ -908,7 +824,7 @@ impl<'a> Solver<'a> {
                     .filter(|&pi| !self.state.is_connected[*pi])
                     .count();
 
-            if is_not_connected_people_count < 2 {
+            if is_not_connected_people_count < 1 {
                 return Ok(());
             }
         }
@@ -1048,12 +964,6 @@ impl<'a> Solver<'a> {
         while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
-            }
-
-            if self.state.actions.len() >= 700 {
-                if let Err(SolverError::TooManyActions) = self.buildnothing() {
-                    break;
-                }
             }
 
             while self.state.station_queue.len() > 0 && self.state.money >= COST_STATION {
@@ -1279,7 +1189,7 @@ impl<'a> Solver<'a> {
     fn solve3(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
         let mut cnt = 100;
         let mut rng = rand::prelude::ThreadRng::default();
-        let random_value = rng.gen_range(25..125);
+        let random_value = rng.gen_range(30..130);
 
         let yoi_pair_list = self
             .info
@@ -1362,15 +1272,35 @@ impl<'a> Solver<'a> {
                 *best_score = score;
                 self.best_actions = actions.clone();
             }
+            self.state = SolverState::new(self.input);
             cnt -= 1;
         }
+    }
+
+    fn solve4(&mut self, time_limit: &Duration, start_time: &Instant, best_score: &mut i64) {
+        let yoi_pair_list = self
+            .info
+            .yoi_pair_list
+            .iter()
+            .map(|(_, pair)| *pair)
+            .take(1)
+            .collect::<Vec<_>>();
+
+        let Answer { actions, score } = self.execute(&time_limit, &start_time, &yoi_pair_list);
+        if score > *best_score {
+            *best_score = score;
+            self.best_actions = actions.clone();
+        }
+        self.state = SolverState::new(self.input);
     }
 
     fn solve(&mut self, time_limit: &Duration, start_time: &Instant) {
         let mut best_score = self.input.k as i64;
         eprintln!("{}", start_time.elapsed().as_millis());
 
-        for _i in 0..100 {
+        self.solve4(time_limit, start_time, &mut best_score);
+
+        for _i in 0..30 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -1378,9 +1308,8 @@ impl<'a> Solver<'a> {
             self.solve3(time_limit, start_time, &mut best_score);
         }
 
-        for _i in 0..100 {
+        for _i in 0..30 {
             if start_time.elapsed() >= *time_limit {
-                eprintln!("time over");
                 break;
             }
             self.solve2(time_limit, start_time, &mut best_score);
@@ -1396,7 +1325,7 @@ impl<'a> Solver<'a> {
 
 #[fastout]
 fn main() {
-    let time_limit = Duration::from_millis(2900);
+    let time_limit = Duration::from_millis(2910);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
