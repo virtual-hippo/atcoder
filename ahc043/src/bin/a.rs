@@ -398,6 +398,9 @@ struct SolverInfo {
 
     // 繋げると点数が高くなる組み合わせを降順にソートしたもの
     yoi_pair_list: Vec<(i64, (Pos, Pos))>,
+
+    // 繋げると収入が増える組み合わせを降順にソートしたもの
+    high_income_pair_list: Vec<(i64, (Pos, Pos))>,
 }
 
 // 駅を建てた際に通勤可能になるか判定する
@@ -442,58 +445,15 @@ impl SolverInfo {
             .sorted_by(|a, b| b.0.cmp(&a.0))
             .collect::<Vec<_>>();
 
-        // let mut shunyu_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
-
-        // for i in 0..150 {
-        //     if start_time.elapsed() >= *time_limit {
-        //         eprintln!("time limit");
-        //         break;
-        //     }
-
-        //     // 高スコアが見込まれないものは間引く
-        //     if total_buildings_around_cells[i].0 < 10 {
-        //         continue;
-        //     }
-
-        //     for j in i + 1..151 {
-        //         if start_time.elapsed() >= *time_limit {
-        //             eprintln!("time limit");
-        //             break;
-        //         }
-
-        //         // 高スコアが見込まれないものは間引く
-        //         if total_buildings_around_cells[j].0 < 10 {
-        //             continue;
-        //         }
-        //         let pair = (
-        //             Pos::new(total_buildings_around_cells[i].1),
-        //             Pos::new(total_buildings_around_cells[j].1),
-        //         );
-
-        //         // 総収入が多いものを計算する
-        //         let so_income = {
-        //             let building_count = calc_distance(&pair.0, &pair.1) + 1;
-        //             let nothing_count = (input.t as i64) - building_count;
-
-        //             let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
-        //             let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
-
-        //             // pos1, pos2 両方に属する人を探す
-        //             let income = people1
-        //                 .iter()
-        //                 .filter(|&pi1| people2.contains(pi1))
-        //                 .map(|pi| input.distance[*pi])
-        //                 .sum::<i64>();
-
-        //             nothing_count * income
-        //         };
-        //         shunyu_pair_list.push((so_income, pair));
-        //     }
-        // }
-
-        // shunyu_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
-
         let yoi_pair_list = Self::create_yoi_pair_list(
+            input,
+            &total_buildings_around_cells,
+            &people_around_cell,
+            &start_time,
+            &time_limit,
+        );
+
+        let high_income_pair_list = Self::create_high_income_pair_list(
             input,
             &total_buildings_around_cells,
             &people_around_cell,
@@ -505,6 +465,7 @@ impl SolverInfo {
             total_buildings_around_cells,
             people_around_cell,
             yoi_pair_list,
+            high_income_pair_list,
         }
     }
 
@@ -587,6 +548,114 @@ impl SolverInfo {
             let mut new = vec![];
             let mut exists = vec![];
             for &(score, pair) in yoi_pair_list.iter() {
+                if exists.len() == 0 {
+                    new.push((score, pair));
+                    exists.push(pair.0);
+                    exists.push(pair.1);
+                    continue;
+                }
+
+                let mut new1 = pair.0;
+                let mut new2 = pair.1;
+
+                for exist_pos in exists.iter() {
+                    if new1 == pair.0 && calc_distance(&pair.0, exist_pos) <= 2 {
+                        new1 = *exist_pos;
+                    }
+                    if new2 == pair.1 && calc_distance(&pair.1, exist_pos) <= 2 {
+                        new2 = *exist_pos;
+                    }
+                    if new1 != pair.0 && new2 != pair.1 {
+                        break;
+                    }
+                }
+
+                new.push((score, (new1, new2)));
+                if new1 == pair.0 {
+                    exists.push(pair.0);
+                }
+                if new2 == pair.1 {
+                    exists.push(pair.1);
+                }
+            }
+            new
+        };
+
+        new
+    }
+
+    fn create_high_income_pair_list(
+        input: &SolverInput,
+        total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
+        people_around_cell: &Vec<Vec<Vec<usize>>>,
+        start_time: &Instant,
+        time_limit: &Duration,
+    ) -> Vec<(i64, (Pos, Pos))> {
+        let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
+        for i in 0..300 {
+            if start_time.elapsed() >= *time_limit {
+                eprintln!("time limit");
+                break;
+            }
+
+            // 高スコアが見込まれないものは間引く
+            if total_buildings_around_cells[i].0 < 10 {
+                continue;
+            }
+
+            for j in i + 1..301 {
+                if start_time.elapsed() >= *time_limit {
+                    eprintln!("time limit");
+                    break;
+                }
+
+                // 高スコアが見込まれないものは間引く
+                if total_buildings_around_cells[j].0 < 10 {
+                    continue;
+                }
+                let pair = (
+                    Pos::new(total_buildings_around_cells[i].1),
+                    Pos::new(total_buildings_around_cells[j].1),
+                );
+
+                let distance = calc_distance(&pair.0, &pair.1);
+
+                // 収入が高いものを計算する
+                let income = {
+                    let building_count = distance + 1;
+                    let nothing_count = (input.t as i64) - building_count;
+
+                    let people1 = &people_around_cell[pair.0 .0][pair.0 .1];
+                    let people2 = &people_around_cell[pair.1 .0][pair.1 .1];
+
+                    // pos1, pos2 両方に属する人を探す
+                    let peoples = people1
+                        .iter()
+                        .filter(|&pi1| people2.contains(pi1))
+                        .collect::<Vec<_>>();
+
+                    let income = peoples
+                        .iter()
+                        .filter(|&&pi| {
+                            let home = input.home[*pi];
+                            let workspace = input.workspace[*pi];
+                            can_tsukin_if_build_station(&home, &workspace, &pair)
+                        })
+                        .map(|pi| input.distance[**pi])
+                        .sum::<i64>();
+
+                    income * nothing_count
+                };
+                high_income_pair_list.push((income, pair));
+            }
+        }
+
+        high_income_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
+
+        let new = {
+            let mut new = vec![];
+            let mut exists = vec![];
+            for &(score, pair) in high_income_pair_list.iter() {
                 if exists.len() == 0 {
                     new.push((score, pair));
                     exists.push(pair.0);
@@ -1195,8 +1264,15 @@ impl<'a> Solver<'a> {
             .info
             .yoi_pair_list
             .iter()
+            .take(30)
             .map(|(_, pair)| *pair)
-            .take(50)
+            .chain(
+                self.info
+                    .high_income_pair_list
+                    .iter()
+                    .take(30)
+                    .map(|(_, pair)| *pair),
+            )
             .collect::<Vec<_>>();
 
         while cnt > 0 {
