@@ -763,7 +763,7 @@ impl<'a> Solver<'a> {
         let state = initial_state.clone();
         Self {
             input,
-            info: SolverInfo::new(input, time_limit, start_time, |_: usize| 10),
+            info: SolverInfo::new(input, time_limit, start_time, |m: usize| (m * 2) / 100),
             initial_state,
             state,
             best_actions: vec![Action::DoNothing; input.t],
@@ -1164,7 +1164,7 @@ impl<'a> Solver<'a> {
     }
 
     // 全ての人の家と仕事場の組み合わせを試す
-    fn solve1(
+    fn _solve1(
         &mut self,
         time_limit: &Duration,
         start_time: &Instant,
@@ -1508,6 +1508,10 @@ impl<'a> Solver<'a> {
         //     self.solve3(time_limit, start_time, &mut best_score);
         // }
 
+        // while start_time.elapsed() < *time_limit - Duration::from_millis(50) {
+        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
+        // }
+
         for _i in 0..70 {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit solve2");
@@ -1516,7 +1520,7 @@ impl<'a> Solver<'a> {
             self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
         }
 
-        self.solve1(time_limit, start_time, &mut best_score, &mut best_income);
+        // self._solve1(time_limit, start_time, &mut best_score, &mut best_income);
 
         // HACK 再考余地あり
         // let get_shikiichi = |_: usize| 5;
@@ -1529,16 +1533,7 @@ impl<'a> Solver<'a> {
         //         break;
         //     }
 
-        //     self.state = SolverState::new(self.input);
-        //     self._solve3(time_limit, start_time, &mut best_score);
-
-        //     if start_time.elapsed() >= *time_limit {
-        //         eprintln!("time limit shikiichi 5");
-        //         break;
-        //     }
-
-        //     self.state = SolverState::new(self.input);
-        //     self.solve2(time_limit, start_time, &mut best_score);
+        //     self.solve2(time_limit, start_time, &mut best_score, &mut best_income);
         // }
 
         best_score
