@@ -893,6 +893,11 @@ impl<'a> Solver<'a> {
     fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
+        // 接続済みは繋げない
+        if self.state.field.uf.is_same(pos0, pos1) {
+            return Ok(());
+        }
+
         if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.input.t {
             return Err(SolverError::TooManyActions);
         }
@@ -1049,7 +1054,7 @@ impl<'a> Solver<'a> {
         let mut rng = rand::prelude::ThreadRng::default();
         let random_value = rng.gen_range(0..100);
 
-        while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
+        'outer: while self.state.actions.len() < self.input.t && pos_pair_queue.len() > 0 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -1090,12 +1095,26 @@ impl<'a> Solver<'a> {
                 );
             }
 
-            let (mut pos0, pos1) = pos_pair_queue.pop_front().unwrap();
+            let (mut pos0, mut pos1) = pos_pair_queue.pop_front().unwrap();
 
             // 建築済みの近い駅を探す
-            for &station in self.state.stations.iter() {
-                if calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1) {
-                    pos0 = station;
+            {
+                for &station in self.state.stations.iter() {
+                    let is_same_pos0 = self.state.field.uf.is_same(station, pos0);
+                    let is_same_pos1 = self.state.field.uf.is_same(station, pos1);
+                    // 接続済みは繋げない
+                    if is_same_pos0 && is_same_pos1 {
+                        continue 'outer;
+                    }
+
+                    if is_same_pos0 && calc_distance(&station, &pos1) < calc_distance(&pos0, &pos1)
+                    {
+                        pos0 = station;
+                    }
+                    if is_same_pos1 && calc_distance(&station, &pos0) < calc_distance(&pos1, &pos0)
+                    {
+                        pos1 = station;
+                    }
                 }
             }
 
@@ -1467,7 +1486,7 @@ impl<'a> Solver<'a> {
         //     self.solve3(time_limit, start_time, &mut best_score);
         // }
 
-        for _i in 0..50 {
+        for _i in 0..70 {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit solve2");
                 break;
