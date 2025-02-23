@@ -1324,7 +1324,7 @@ impl<'a> Solver<'a> {
                 .chain(pi_list_list.iter().flatten())
                 .chain(pi_list_list2.iter().flatten());
 
-            for _i in 0..10 {
+            for _i in 0..50 {
                 let merged: Vec<_> = merged_iter
                     .clone()
                     .filter(|_| rng.gen_range(50..150) < random_value)
@@ -1343,36 +1343,6 @@ impl<'a> Solver<'a> {
                     *best_income = income;
                 }
             }
-
-            for _ in 0..30 {
-                let pi_list = pi_list_list
-                    .iter()
-                    .filter(|_| rng.gen_range(50..120) < random_value)
-                    .flatten()
-                    .map(|&v| v)
-                    .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
-                    .collect::<Vec<_>>();
-
-                let merged: Vec<_> = yoi_pair_list
-                    .iter()
-                    .chain(pi_list.iter())
-                    .cloned()
-                    .collect();
-
-                let Answer {
-                    actions,
-                    score,
-                    income,
-                } = self.execute(&time_limit, &start_time, &merged);
-                if score > *best_score {
-                    *best_score = score;
-                    self.best_actions = actions.clone();
-                }
-                if income > *best_income {
-                    *best_income = income;
-                }
-            }
-
             self.state = self.initial_state.clone();
             cnt -= 1;
         }
