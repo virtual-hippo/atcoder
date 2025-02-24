@@ -422,7 +422,7 @@ fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos
 }
 
 impl SolverInfo {
-    const TAKE_COUNT: usize = 500;
+    const TAKE_COUNT: usize = 250;
 
     fn new(
         input: &SolverInput,
@@ -859,7 +859,7 @@ impl<'a> Solver<'a> {
                 start_time,
                 |m: usize| {
                     if m < 170 {
-                        5
+                        8
                     } else if m < 1000 {
                         10
                     } else {
@@ -1444,7 +1444,7 @@ impl<'a> Solver<'a> {
         let mut best_state_cache = SolverState::new(&self.input);
         eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
 
-        for _i in 0..8 {
+        for _i in 0..5 {
             println!("#_i: {}", _i);
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
@@ -1454,7 +1454,7 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..7 {
+            for _ in 0..20 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1466,7 +1466,7 @@ impl<'a> Solver<'a> {
             }
             // limit を元に戻す
             self.limit = self.input.t;
-            println!("#init serach: {} ms", start_time.elapsed().as_millis());
+            eprintln!("#init serach: {} ms", start_time.elapsed().as_millis());
 
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
@@ -1481,7 +1481,7 @@ impl<'a> Solver<'a> {
                 best_state_cache.money -= best_state_cache.income;
             }
 
-            for _ in 0..3 {
+            for _ in 0..10 {
                 self.state = self.initial_state.clone();
                 self.solve2(
                     time_limit,
@@ -1519,7 +1519,7 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..10 {
+            for _ in 0..30 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1546,7 +1546,7 @@ impl<'a> Solver<'a> {
                 best_state_cache.money -= best_state_cache.income;
             }
 
-            for _ in 0..3 {
+            for _ in 0..10 {
                 self.state = self.initial_state.clone();
                 self.solve2(
                     time_limit,
