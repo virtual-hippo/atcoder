@@ -3,14 +3,14 @@ use proconio::input;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
-//use rustc_hash::FxHashSet;
+use rustc_hash::FxHashSet;
 
 use rand::Rng;
 
 const COST_STATION: i64 = 5000;
 const COST_RAIL: i64 = 100;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Pos(usize, usize);
 impl Pos {
     fn new((r, c): (usize, usize)) -> Self {
@@ -562,7 +562,6 @@ impl SolverInfo {
 
         for i in 0..(take_count - 1) {
             if start_time.elapsed() >= *time_limit {
-                eprintln!("time limit");
                 break;
             }
 
@@ -573,7 +572,6 @@ impl SolverInfo {
 
             for j in i + 1..take_count {
                 if start_time.elapsed() >= *time_limit {
-                    eprintln!("time limit");
                     break;
                 }
 
@@ -628,6 +626,8 @@ impl SolverInfo {
 
         yoi_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
 
+        let mut set = FxHashSet::default();
+
         let new = {
             let mut new = vec![];
             let mut exists = vec![];
@@ -661,7 +661,13 @@ impl SolverInfo {
                     }
                 }
 
-                new.push((score, (new1, new2)));
+                if set.contains(&(new1, new2)) {
+                    continue;
+                } else {
+                    set.insert((new1, new2));
+                    new.push((score, (new1, new2)));
+                }
+
                 if new1 == pair.0 {
                     exists.push(pair.0);
                 }
@@ -672,7 +678,7 @@ impl SolverInfo {
             new
         };
 
-        new
+        new.into_iter().take(500).collect()
     }
 
     fn _create_high_income_pair_list(
@@ -690,7 +696,6 @@ impl SolverInfo {
 
         for i in 0..(take_count - 1) {
             if start_time.elapsed() >= *time_limit {
-                eprintln!("time limit");
                 break;
             }
 
@@ -701,7 +706,6 @@ impl SolverInfo {
 
             for j in i + 1..take_count {
                 if start_time.elapsed() >= *time_limit {
-                    eprintln!("time limit");
                     break;
                 }
 
@@ -749,6 +753,8 @@ impl SolverInfo {
 
         high_income_pair_list.sort_by(|a, b| b.0.cmp(&a.0));
 
+        let mut set = FxHashSet::default();
+
         let new = {
             let mut new = vec![];
             let mut exists = vec![];
@@ -781,7 +787,13 @@ impl SolverInfo {
                     }
                 }
 
-                new.push((score, (new1, new2)));
+                if set.contains(&(new1, new2)) {
+                    continue;
+                } else {
+                    set.insert((new1, new2));
+                    new.push((score, (new1, new2)));
+                }
+
                 if new1 == pair.0 {
                     exists.push(pair.0);
                 }
@@ -791,8 +803,7 @@ impl SolverInfo {
             }
             new
         };
-
-        new
+        new.into_iter().take(500).collect()
     }
 }
 
@@ -851,27 +862,20 @@ impl<'a> Solver<'a> {
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         let initial_state = SolverState::new(input);
         let state = initial_state.clone();
+        let get_shikiichi = |m: usize| {
+            if m < 200 {
+                7
+            } else if m < 500 {
+                9
+            } else if m < 1000 {
+                10
+            } else {
+                (m * 15) / 1000
+            }
+        };
         Self {
             input,
-            info: SolverInfo::new(
-                input,
-                time_limit,
-                start_time,
-                |m: usize| {
-                    if m < 170 {
-                        7
-                    } else if m < 750 {
-                        9
-                    } else if m < 1000 {
-                        10
-                    } else if m < 1300 {
-                        13
-                    } else {
-                        16
-                    }
-                },
-                true,
-            ),
+            info: SolverInfo::new(input, time_limit, start_time, get_shikiichi, true),
             initial_state,
             state,
             best_actions: vec![Action::DoNothing; input.t],
@@ -1201,15 +1205,6 @@ impl<'a> Solver<'a> {
                 }
             }
 
-            if cfg!(feature = "debug") {
-                println!(
-                    "# actions.len={}, self.money={}, self.income={}",
-                    self.state.actions.len(),
-                    self.state.money,
-                    self.state.income
-                );
-            }
-
             let (mut pos0, pos1) = pos_pair_queue.pop_front().unwrap();
 
             // 建築済みの近い駅を探す
@@ -1223,7 +1218,6 @@ impl<'a> Solver<'a> {
 
             match result_connect {
                 Ok(_) => {
-                    // eprintln!("# pos_pair_queue.len()={}", pos_pair_queue.len());
                     if rng.gen_range(30..90) < random_value {
                         pos_pair_queue.make_contiguous().sort_by(|a, b| {
                             calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1))
@@ -1231,7 +1225,6 @@ impl<'a> Solver<'a> {
                     }
                 }
                 Err(SolverError::NotEnoughMoney(cost)) => {
-                    // eprintln!("# NotEnoughMoney cost={}", cost);
                     if cost == COST_RAIL {
                         while self.state.actions.len() < self.limit && self.state.money < COST_RAIL
                         {
@@ -1300,12 +1293,6 @@ impl<'a> Solver<'a> {
                     .take(rng.gen_range(10..21))
                     .map(|(_, pair)| *pair),
             )
-            .collect::<Vec<_>>();
-
-        let yoi_pair_list = yoi_pair_list
-            .iter()
-            .enumerate()
-            .map(|(_, pair)| *pair)
             .collect::<Vec<_>>();
 
         let pi_list_list = yoi_pair_list
@@ -1391,9 +1378,12 @@ impl<'a> Solver<'a> {
                         ret.push(pair);
                     }
                 }
-                ret.sort_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)));
 
-                ret.iter().take(rng.gen_range(8..15)).cloned().collect()
+                ret.iter()
+                    .sorted_by(|a, b| calc_distance(&b.0, &b.1).cmp(&calc_distance(&a.0, &a.1)))
+                    .take(rng.gen_range(8..15))
+                    .cloned()
+                    .collect()
             })
             .collect::<Vec<Vec<(Pos, Pos)>>>();
 
@@ -1440,12 +1430,10 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
         let mut best_income_with_money = 0;
         let mut best_state_cache = SolverState::new(&self.input);
-        eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
+        // eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
 
-        for _i in 0..10 {
-            println!("#_i: {}", _i);
+        for _i in 0..8 {
             if start_time.elapsed() > *time_limit {
-                eprintln!("time limit");
                 return best_score;
             }
 
@@ -1464,10 +1452,13 @@ impl<'a> Solver<'a> {
             }
             // limit を元に戻す
             self.limit = self.input.t;
-            eprintln!("#init serach: {} ms", start_time.elapsed().as_millis());
+            // eprintln!(
+            //     "#init serach {}: {} ms",
+            //     _i,
+            //     start_time.elapsed().as_millis()
+            // );
 
             if start_time.elapsed() > *time_limit {
-                eprintln!("time limit");
                 return best_score;
             }
 
@@ -1526,10 +1517,9 @@ impl<'a> Solver<'a> {
             },
             false,
         );
-        eprintln!("#created info2: {} ms", start_time.elapsed().as_millis());
+        // eprintln!("#created info2: {} ms", start_time.elapsed().as_millis());
         for _i in 0..50 {
             if start_time.elapsed() > *time_limit {
-                eprintln!("time limit");
                 return best_score;
             }
 
@@ -1556,7 +1546,6 @@ fn main() {
     let best_score = solver.solve(&time_limit, &start_time);
 
     println!("#time: {}", start_time.elapsed().as_millis());
-    assert!(start_time.elapsed() <= Duration::from_millis(2990));
     println!("#score: {}", best_score);
     solver.print_best_actions();
 }
