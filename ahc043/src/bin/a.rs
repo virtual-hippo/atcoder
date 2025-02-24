@@ -408,7 +408,7 @@ struct SolverInfo {
     yoi_pair_list: Vec<(i64, (Pos, Pos))>,
 
     // 繋げると収入が増える組み合わせを降順にソートしたもの
-    // high_income_pair_list: Vec<(i64, (Pos, Pos))>,
+    high_income_pair_list: Vec<(i64, (Pos, Pos))>,
 
     // 寄せたワークスペース
     hosei_home: Vec<Pos>,
@@ -422,7 +422,7 @@ fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos
 }
 
 impl SolverInfo {
-    const TAKE_COUNT: usize = 250;
+    const TAKE_COUNT: usize = 500;
 
     fn new(
         input: &SolverInput,
@@ -483,21 +483,21 @@ impl SolverInfo {
             //&FxHashSet::default(),
         );
 
-        // let high_income_pair_list = Self::create_high_income_pair_list(
-        //     input,
-        //     &total_buildings_around_cells,
-        //     &people_around_cell,
-        //     &start_time,
-        //     &time_limit,
-        //     get_shikiichi,
-        //     // &FxHashSet::default(),
-        // );
+        let high_income_pair_list = Self::_create_high_income_pair_list(
+            input,
+            &total_buildings_around_cells,
+            &people_around_cell,
+            &start_time,
+            &time_limit,
+            get_shikiichi,
+            // &FxHashSet::default(),
+        );
 
         Self {
             total_buildings_around_cells,
             people_around_cell,
             yoi_pair_list,
-            // high_income_pair_list,
+            high_income_pair_list,
             hosei_home: input
                 .home
                 .iter()
@@ -859,9 +859,13 @@ impl<'a> Solver<'a> {
                 start_time,
                 |m: usize| {
                     if m < 170 {
-                        8
+                        7
+                    } else if m < 750 {
+                        9
                     } else if m < 1000 {
                         10
+                    } else if m < 1300 {
+                        13
                     } else {
                         16
                     }
@@ -1289,13 +1293,13 @@ impl<'a> Solver<'a> {
             .iter()
             .take(rng.gen_range(10..21))
             .map(|(_, pair)| *pair)
-            // .chain(
-            //     self.info
-            //         .high_income_pair_list
-            //         .iter()
-            //         .take(rng.gen_range(10..21))
-            //         .map(|(_, pair)| *pair),
-            // )
+            .chain(
+                self.info
+                    .high_income_pair_list
+                    .iter()
+                    .take(rng.gen_range(10..21))
+                    .map(|(_, pair)| *pair),
+            )
             .collect::<Vec<_>>();
 
         let yoi_pair_list = yoi_pair_list
@@ -1501,58 +1505,41 @@ impl<'a> Solver<'a> {
             return best_score;
         }
 
-        self.info = SolverInfo::new(&self.input, time_limit, start_time, |_: usize| 5, false);
-        eprintln!("#created info: {} ms", start_time.elapsed().as_millis());
-        for _i in 0..15 {
-            println!("#_i: {}", _i);
+        self.initial_state = SolverState::new(&self.input);
+        self.state = self.initial_state.clone();
+        self.info = SolverInfo::new(
+            &self.input,
+            time_limit,
+            start_time,
+            |m: usize| {
+                if m < 100 {
+                    3
+                } else if m < 170 {
+                    5
+                } else if m < 300 {
+                    6
+                } else if m < 500 {
+                    4
+                } else {
+                    20
+                }
+            },
+            false,
+        );
+        eprintln!("#created info2: {} ms", start_time.elapsed().as_millis());
+        for _i in 0..50 {
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
                 return best_score;
             }
 
-            // 途中時点の最適な値を求める
-            // limit を一時的に MIDにする
-            self.limit = Self::MID;
-            for _ in 0..7 {
-                self.solve2(
-                    time_limit,
-                    start_time,
-                    &mut best_score,
-                    &mut best_income_with_money,
-                    &mut best_state_cache,
-                );
-                self.state = self.initial_state.clone();
-            }
-            // limit を元に戻す
-            self.limit = self.input.t;
-            println!("#init serach: {} ms", start_time.elapsed().as_millis());
-
-            if start_time.elapsed() > *time_limit {
-                eprintln!("time limit");
-                return best_score;
-            }
-
-            self.initial_state = best_state_cache.clone();
-
-            // 末尾の DoNothing を削除する
-            while best_state_cache.actions.last() == Some(&Action::DoNothing) {
-                best_state_cache.actions.pop();
-                best_state_cache.money -= best_state_cache.income;
-            }
-
-            for _ in 0..3 {
-                self.state = self.initial_state.clone();
-                self.solve2(
-                    time_limit,
-                    start_time,
-                    &mut best_score,
-                    &mut best_income_with_money,
-                    &mut best_state_cache,
-                );
-            }
-
-            self.initial_state = SolverState::new(&self.input);
-            self.state = self.initial_state.clone();
+            self.solve2(
+                time_limit,
+                start_time,
+                &mut best_score,
+                &mut best_income_with_money,
+                &mut best_state_cache,
+            );
         }
 
         best_score
