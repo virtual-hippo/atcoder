@@ -409,6 +409,10 @@ struct SolverInfo {
 
     // 繋げると収入が増える組み合わせを降順にソートしたもの
     high_income_pair_list: Vec<(i64, (Pos, Pos))>,
+
+    // 寄せたワークスペース
+    hosei_home: Vec<Pos>,
+    hosei_workspace: Vec<Pos>,
 }
 
 // 駅を建てた際に通勤可能になるか判定する
@@ -418,6 +422,8 @@ fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos
 }
 
 impl SolverInfo {
+    const TAKE_COUNT: usize = 500;
+
     fn new(
         input: &SolverInput,
         time_limit: &Duration,
@@ -454,9 +460,17 @@ impl SolverInfo {
             });
 
         let total_buildings_around_cells = iproduct!(0..input.n, 0..input.n)
+            .filter(|&(i, j)| i % 3 == 1 && j % 3 == 0)
             .map(|(i, j)| (total_buildings_around_cell[i][j], (i, j)))
             .sorted_by(|a, b| b.0.cmp(&a.0))
             .collect::<Vec<_>>();
+
+        debug_assert_eq!(
+            total_buildings_around_cells
+                .iter()
+                .all(|(_, (i, j))| i % 3 == 1 && j % 3 == 0),
+            true
+        );
 
         let yoi_pair_list = Self::create_yoi_pair_list(
             input,
@@ -483,7 +497,44 @@ impl SolverInfo {
             people_around_cell,
             yoi_pair_list,
             high_income_pair_list,
+            hosei_home: input.home.iter().map(|pos| Self::hosei(pos)).collect(),
+            hosei_workspace: input.workspace.iter().map(|pos| Self::hosei(pos)).collect(),
         }
+    }
+
+    // 軸に寄せる
+    fn hosei(pos: &Pos) -> Pos {
+        let Pos(mut i, mut j) = *pos;
+
+        {
+            if i % 3 == 2 {
+                i -= 1
+            }
+            if i % 3 == 0 {
+                if i + 1 < 50 {
+                    i += 1
+                } else {
+                    i -= 2
+                }
+            }
+        }
+
+        {
+            if j % 3 == 1 {
+                j -= 1
+            }
+            if j % 3 == 2 {
+                if j + 1 < 50 {
+                    j += 1
+                } else {
+                    j -= 2
+                }
+            }
+        }
+
+        debug_assert_eq!(i % 3, 1);
+        debug_assert_eq!(j % 3, 0);
+        Pos(i, j)
     }
 
     fn create_yoi_pair_list(
@@ -498,9 +549,9 @@ impl SolverInfo {
         let mut yoi_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
 
         let shikiichi = get_shikiichi(input.m);
-        let take_count = 250;
+        let take_count = Self::TAKE_COUNT.min(total_buildings_around_cells.len());
 
-        for i in 0..take_count {
+        for i in 0..(take_count - 1) {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
                 break;
@@ -511,7 +562,7 @@ impl SolverInfo {
                 continue;
             }
 
-            for j in i + 1..take_count + 1 {
+            for j in i + 1..take_count {
                 if start_time.elapsed() >= *time_limit {
                     eprintln!("time limit");
                     break;
@@ -619,9 +670,9 @@ impl SolverInfo {
     ) -> Vec<(i64, (Pos, Pos))> {
         let mut high_income_pair_list = Vec::with_capacity(total_buildings_around_cells.len());
         let shikiichi = get_shikiichi(input.m);
-        let take_count = 240;
+        let take_count = Self::TAKE_COUNT.min(total_buildings_around_cells.len());
 
-        for i in 0..take_count {
+        for i in 0..(take_count - 1) {
             if start_time.elapsed() >= *time_limit {
                 eprintln!("time limit");
                 break;
@@ -632,7 +683,7 @@ impl SolverInfo {
                 continue;
             }
 
-            for j in i + 1..take_count + 1 {
+            for j in i + 1..take_count {
                 if start_time.elapsed() >= *time_limit {
                     eprintln!("time limit");
                     break;
@@ -922,9 +973,15 @@ impl<'a> Solver<'a> {
     fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
-        // 接続済みは繋げない
-        if self.state.field.uf.is_same(pos0, pos1) {
-            return Ok(());
+        // すでに駅が建てられている場合はスキップ
+        if let Some(existing) = self.state.field.fields[pos0.0][pos0.1].as_ref() {
+            if existing.is_station() {
+                if let Some(existing) = self.state.field.fields[pos1.0][pos1.1].as_ref() {
+                    if existing.is_station() {
+                        return Ok(());
+                    }
+                }
+            }
         }
 
         if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.limit {
@@ -1157,7 +1214,6 @@ impl<'a> Solver<'a> {
                     pos_pair_queue.push_front((pos0, pos1));
                 }
                 Err(SolverError::TooManyActions) => {
-                    debug_assert!(self.state.actions.len() >= self.limit);
                     break;
                 }
             }
@@ -1264,8 +1320,8 @@ impl<'a> Solver<'a> {
 
                 // push people0
                 for &pi in people0.iter() {
-                    let home = self.input.home[pi];
-                    let workspace = self.input.workspace[pi];
+                    let home = self.info.hosei_home[pi];
+                    let workspace = self.info.hosei_workspace[pi];
                     let pair = if calc_distance(&home, &pos0) <= 2 {
                         (*pos0, workspace)
                     } else {
@@ -1283,8 +1339,8 @@ impl<'a> Solver<'a> {
 
                 // push people1
                 for &pi in people1.iter() {
-                    let home = self.input.home[pi];
-                    let workspace = self.input.workspace[pi];
+                    let home = self.info.hosei_home[pi];
+                    let workspace = self.info.hosei_workspace[pi];
                     let pair = if calc_distance(&home, &pos1) <= 2 {
                         (*pos1, workspace)
                     } else {
@@ -1320,8 +1376,8 @@ impl<'a> Solver<'a> {
             .map(|(pos, people)| {
                 let mut ret = vec![];
                 for &pi in people.iter() {
-                    let home = self.input.home[pi];
-                    let workspace = self.input.workspace[pi];
+                    let home = self.info.hosei_home[pi];
+                    let workspace = self.info.hosei_workspace[pi];
                     let pair = if calc_distance(&home, &pos) <= 2 {
                         (pos, workspace)
                     } else {
