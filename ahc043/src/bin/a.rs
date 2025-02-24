@@ -422,7 +422,7 @@ fn can_tsukin_if_build_station(home: &Pos, workspace: &Pos, stations: &(Pos, Pos
 }
 
 impl SolverInfo {
-    const TAKE_COUNT: usize = 500;
+    const TAKE_COUNT: usize = 250;
 
     fn new(
         input: &SolverInput,
@@ -662,7 +662,6 @@ impl SolverInfo {
                 }
 
                 if set.contains(&(new1, new2)) {
-                    continue;
                 } else {
                     set.insert((new1, new2));
                     new.push((score, (new1, new2)));
@@ -678,7 +677,7 @@ impl SolverInfo {
             new
         };
 
-        new.into_iter().take(500).collect()
+        new.into_iter().take(300).collect()
     }
 
     fn _create_high_income_pair_list(
@@ -788,7 +787,6 @@ impl SolverInfo {
                 }
 
                 if set.contains(&(new1, new2)) {
-                    continue;
                 } else {
                     set.insert((new1, new2));
                     new.push((score, (new1, new2)));
@@ -803,7 +801,7 @@ impl SolverInfo {
             }
             new
         };
-        new.into_iter().take(500).collect()
+        new.into_iter().take(300).collect()
     }
 }
 
@@ -868,7 +866,7 @@ impl<'a> Solver<'a> {
             } else if m < 500 {
                 9
             } else if m < 1000 {
-                10
+                (m * 15) / 1000
             } else {
                 (m * 15) / 1000
             }
@@ -1392,7 +1390,7 @@ impl<'a> Solver<'a> {
             .chain(pi_list_list.iter().flatten())
             .chain(pi_list_list2.iter().flatten());
 
-        for _i in 0..50 {
+        for _i in 0..20 {
             if start_time.elapsed() >= *time_limit {
                 break;
             }
@@ -1430,9 +1428,11 @@ impl<'a> Solver<'a> {
         let mut best_score = self.input.k as i64;
         let mut best_income_with_money = 0;
         let mut best_state_cache = SolverState::new(&self.input);
-        // eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
+        eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
 
-        for _i in 0..8 {
+        let pre_time_limit = Duration::from_millis(2750);
+
+        for _i in 0..3 {
             if start_time.elapsed() > *time_limit {
                 return best_score;
             }
@@ -1440,9 +1440,9 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..7 {
+            for _ in 0..18 {
                 self.solve2(
-                    time_limit,
+                    &pre_time_limit,
                     start_time,
                     &mut best_score,
                     &mut best_income_with_money,
@@ -1452,11 +1452,11 @@ impl<'a> Solver<'a> {
             }
             // limit を元に戻す
             self.limit = self.input.t;
-            // eprintln!(
-            //     "#init serach {}: {} ms",
-            //     _i,
-            //     start_time.elapsed().as_millis()
-            // );
+            eprintln!(
+                "#init serach {}: {} ms",
+                _i,
+                start_time.elapsed().as_millis()
+            );
 
             if start_time.elapsed() > *time_limit {
                 return best_score;
@@ -1537,7 +1537,7 @@ impl<'a> Solver<'a> {
 }
 
 fn main() {
-    let time_limit = Duration::from_millis(2950);
+    let time_limit = Duration::from_millis(2935);
     let start_time = Instant::now();
 
     let input = SolverInput::new();
