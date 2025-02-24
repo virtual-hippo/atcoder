@@ -835,7 +835,7 @@ impl<'a> Solver<'a> {
                 input,
                 time_limit,
                 start_time,
-                |m: usize| if m < 170 { 8 } else { 10 },
+                |m: usize| if m < 170 { 3 } else { 5 },
             ),
             initial_state,
             state,
