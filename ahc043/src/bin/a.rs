@@ -863,7 +863,7 @@ impl<'a> Solver<'a> {
                     } else if m < 1000 {
                         10
                     } else {
-                        12
+                        16
                     }
                 },
                 true,
@@ -1004,15 +1004,9 @@ impl<'a> Solver<'a> {
     fn connect_points(&mut self, pos0: Pos, pos1: Pos) -> Result<(), SolverError> {
         let mut pre: Option<Pos> = None;
 
-        // すでに駅が建てられている場合はスキップ
-        if let Some(existing) = self.state.field.fields[pos0.0][pos0.1].as_ref() {
-            if existing.is_station() {
-                if let Some(existing) = self.state.field.fields[pos1.0][pos1.1].as_ref() {
-                    if existing.is_station() {
-                        return Ok(());
-                    }
-                }
-            }
+        // 接続済みは繋げない
+        if self.state.field.uf.is_same(pos0, pos1) {
+            return Ok(());
         }
 
         if (calc_distance(&pos0, &pos1) as usize) + self.state.actions.len() >= self.limit {
@@ -1427,7 +1421,7 @@ impl<'a> Solver<'a> {
             }
 
             if limit == Self::MID
-                && self.state.money != (self.input.k as i64)
+                // && self.state.money != (self.input.k as i64)
                 && income + self.state.money > 0.max(*best_income_with_money - Self::TEMP)
             {
                 *best_income_with_money = income + self.state.money;
@@ -1444,7 +1438,7 @@ impl<'a> Solver<'a> {
         let mut best_state_cache = SolverState::new(&self.input);
         eprintln!("solve start: {} ms", start_time.elapsed().as_millis());
 
-        for _i in 0..5 {
+        for _i in 0..10 {
             println!("#_i: {}", _i);
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
@@ -1454,7 +1448,7 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..20 {
+            for _ in 0..7 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1470,7 +1464,7 @@ impl<'a> Solver<'a> {
 
             if start_time.elapsed() > *time_limit {
                 eprintln!("time limit");
-                break;
+                return best_score;
             }
 
             self.initial_state = best_state_cache.clone();
@@ -1481,7 +1475,7 @@ impl<'a> Solver<'a> {
                 best_state_cache.money -= best_state_cache.income;
             }
 
-            for _ in 0..10 {
+            for _ in 0..3 {
                 self.state = self.initial_state.clone();
                 self.solve2(
                     time_limit,
@@ -1519,7 +1513,7 @@ impl<'a> Solver<'a> {
             // 途中時点の最適な値を求める
             // limit を一時的に MIDにする
             self.limit = Self::MID;
-            for _ in 0..30 {
+            for _ in 0..7 {
                 self.solve2(
                     time_limit,
                     start_time,
@@ -1546,7 +1540,7 @@ impl<'a> Solver<'a> {
                 best_state_cache.money -= best_state_cache.income;
             }
 
-            for _ in 0..10 {
+            for _ in 0..3 {
                 self.state = self.initial_state.clone();
                 self.solve2(
                     time_limit,
