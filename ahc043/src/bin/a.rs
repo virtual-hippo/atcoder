@@ -408,7 +408,7 @@ struct SolverInfo {
     yoi_pair_list: Vec<(i64, (Pos, Pos))>,
 
     // 繋げると収入が増える組み合わせを降順にソートしたもの
-    high_income_pair_list: Vec<(i64, (Pos, Pos))>,
+    // high_income_pair_list: Vec<(i64, (Pos, Pos))>,
 
     // 寄せたワークスペース
     hosei_home: Vec<Pos>,
@@ -483,21 +483,21 @@ impl SolverInfo {
             //&FxHashSet::default(),
         );
 
-        let high_income_pair_list = Self::create_high_income_pair_list(
-            input,
-            &total_buildings_around_cells,
-            &people_around_cell,
-            &start_time,
-            &time_limit,
-            get_shikiichi,
-            // &FxHashSet::default(),
-        );
+        // let high_income_pair_list = Self::create_high_income_pair_list(
+        //     input,
+        //     &total_buildings_around_cells,
+        //     &people_around_cell,
+        //     &start_time,
+        //     &time_limit,
+        //     get_shikiichi,
+        //     // &FxHashSet::default(),
+        // );
 
         Self {
             total_buildings_around_cells,
             people_around_cell,
             yoi_pair_list,
-            high_income_pair_list,
+            // high_income_pair_list,
             hosei_home: input
                 .home
                 .iter()
@@ -675,7 +675,7 @@ impl SolverInfo {
         new
     }
 
-    fn create_high_income_pair_list(
+    fn _create_high_income_pair_list(
         input: &SolverInput,
         total_buildings_around_cells: &Vec<(usize, (usize, usize))>,
         people_around_cell: &Vec<Vec<Vec<usize>>>,
@@ -1295,13 +1295,13 @@ impl<'a> Solver<'a> {
             .iter()
             .take(rng.gen_range(10..21))
             .map(|(_, pair)| *pair)
-            .chain(
-                self.info
-                    .high_income_pair_list
-                    .iter()
-                    .take(rng.gen_range(10..21))
-                    .map(|(_, pair)| *pair),
-            )
+            // .chain(
+            //     self.info
+            //         .high_income_pair_list
+            //         .iter()
+            //         .take(rng.gen_range(10..21))
+            //         .map(|(_, pair)| *pair),
+            // )
             .collect::<Vec<_>>();
 
         let yoi_pair_list = yoi_pair_list
