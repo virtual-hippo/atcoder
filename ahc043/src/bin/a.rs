@@ -255,6 +255,7 @@ impl Field {
         }
     }
 
+    // 通勤できるかどうか判定する
     fn is_connected(&mut self, s: Pos, t: Pos) -> bool {
         debug_assert!(calc_distance(&s, &t) > 4);
 
