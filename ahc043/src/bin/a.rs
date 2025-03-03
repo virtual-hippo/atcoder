@@ -855,7 +855,7 @@ struct Solver<'a> {
 }
 
 impl<'a> Solver<'a> {
-    const MID: usize = 400;
+    const MID: usize = 500;
     const TEMP: i64 = 50;
     fn new(input: &'a SolverInput, time_limit: &Duration, start_time: &Instant) -> Self {
         let initial_state = SolverState::new(input);
@@ -873,7 +873,7 @@ impl<'a> Solver<'a> {
         };
         Self {
             input,
-            info: SolverInfo::new(input, time_limit, start_time, get_shikiichi, true),
+            info: SolverInfo::new(input, time_limit, start_time, get_shikiichi, input.m > 500),
             initial_state,
             state,
             best_actions: vec![Action::DoNothing; input.t],
@@ -1185,7 +1185,7 @@ impl<'a> Solver<'a> {
 
             // 建築を放棄した駅がたまりすぎたら貯蓄する
             // 2 - 5 を試したけど 3 が一番良かった
-            if self.state.station_queue.len() > 3 {
+            if self.state.station_queue.len() > 5 {
                 if let Err(SolverError::TooManyActions) = self.buildnothing() {
                     break;
                 } else {
