@@ -1,5 +1,5 @@
-/// #ダイクストラ法
-/// 最短経路を求める
+/// ダイクストラ法
+/// 重み付きグラフの最短経路を求める
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
@@ -9,8 +9,7 @@ fn dijkstra(graph: &Vec<Vec<(usize, i64)>>, n: usize) -> Vec<i64> {
     let mut costs = vec![i64::MAX; n];
     costs[0] = 0;
     heap.push((Reverse(costs[0]), 0));
-    while heap.is_empty() == false {
-        let pos = heap.pop().unwrap().1;
+    while let Some((_, pos)) = heap.pop() {
         if kakutei[pos] {
             continue;
         }

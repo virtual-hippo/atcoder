@@ -5,8 +5,7 @@ fn bfs(graph: &Vec<Vec<usize>>, start: usize) -> Vec<i64> {
     let mut queue = VecDeque::new();
     queue.push_back(start);
     dist[start] = 0;
-    while queue.is_empty() == false {
-        let pos = queue.pop_front().unwrap();
+    while let Some(pos) = queue.pop_front() {
         for to in graph[pos].iter() {
             if dist[*to] == -1 {
                 dist[*to] = dist[pos] + 1;
