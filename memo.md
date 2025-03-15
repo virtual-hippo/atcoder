@@ -475,14 +475,16 @@ fn dfs(
         if v == parent {
             continue;
         }
-        // 部分木のサイズ
+        // 部分木の頂点の重みの総和
         let now = dfs(graph, u, v, total, x, c);
         ret += now;
         mx = mx.max(now);
     }
-    // 親頂点の部分木のサイズ
+    // 親頂点の部分木の頂点の重みの総和
     let parent_size = *total - ret;
     mx = mx.max(parent_size);
+
+    // どの部分木の頂点の重みの総和も 1/2 * total の時, 重心になる
     if mx * 2 <= *total {
         *x = u;
     }
