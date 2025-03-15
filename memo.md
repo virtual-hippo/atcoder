@@ -408,6 +408,48 @@ fn can_move(s: &Vec<Vec<char>>, (i, j): (usize, usize), dir: Dir) -> bool {
 ```
 
 
+## bit 操作
+
+### k 桁目のビットを取得する
+
+```rust
+let num = 0b101101; // 例: 2進数 101101 (10進数で 45)
+let k = 0;
+assert_eq!((num >> k) & 1, 1);
+let k = 1;
+assert_eq!((num >> k) & 1, 0);
+let k = 2;
+assert_eq!((num >> k) & 1, 1);
+let k = 3;
+assert_eq!((num >> k) & 1, 1);
+```
+
+### k 桁目のビットを1にする
+```rust
+let mut num = 0b101101; // 例: 2進数 101101 (10進数で 45)
+
+let k = 1;
+num |= 1 << k;
+assert_eq!(num, 0b101111);
+
+let k = 2;
+num |= 1 << k;
+assert_eq!(num, 0b101111);
+```
+
+### k 桁目のビットを0にする
+```rust
+let mut num = 0b101101; // 例: 2進数 101101 (10進数で 45)
+
+let k = 0;
+num &= !(1 << k);
+assert_eq!(num, 0b101100);
+
+let k = 2;
+num &= !(1 << k);
+assert_eq!(num, 0b101000);
+```
+
 ## うまく分類できないの
 ### 区間スケジュール問題
 ```rust
