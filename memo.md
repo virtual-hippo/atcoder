@@ -450,6 +450,46 @@ num &= !(1 << k);
 assert_eq!(num, 0b101000);
 ```
 
+## グラフ
+### 木の重心
+
+```rust
+// abc348-E
+// https://atcoder.jp/contests/abc348/editorial/9706
+// 木の重心を求める
+fn dfs(
+    graph: &Vec<Vec<usize>>,
+    // 親頂点
+    parent: usize,
+    u: usize,
+    // 木全体の頂点の重みの総和
+    total: &u64,
+    // 重心
+    x: &mut usize,
+    // 頂点の重み
+    c: &Vec<u64>,
+) -> u64 {
+    let mut ret = c[u];
+    let mut mx = 0;
+    for &v in &graph[u] {
+        if v == parent {
+            continue;
+        }
+        // 部分木のサイズ
+        let now = dfs(graph, u, v, total, x, c);
+        ret += now;
+        mx = mx.max(now);
+    }
+    // 親頂点の部分木のサイズ
+    let parent_size = *total - ret;
+    mx = mx.max(parent_size);
+    if mx * 2 <= *total {
+        *x = u;
+    }
+    ret
+}
+```
+
 ## うまく分類できないの
 ### 区間スケジュール問題
 ```rust
