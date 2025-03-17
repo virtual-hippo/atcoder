@@ -1,0 +1,20 @@
+[package]
+name = "ahc044"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+ahc044-a = { alias = "a", problem = "https://atcoder.jp/contests/ahc044/tasks/ahc044_a" }
+
+[[bin]]
+name = "ahc044-a"
+path = "src/bin/a.rs"
+
+[dependencies]
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+itertools = "=0.11.0"
+rustc-hash = "=1.1.0"
+
+[dev-dependencies]
