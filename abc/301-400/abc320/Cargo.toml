@@ -1,0 +1,51 @@
+[package]
+name = "abc320"
+version = "0.1.0"
+edition = "2018"
+
+[package.metadata.cargo-compete.bin]
+abc320-a = { alias = "a", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_a" }
+abc320-b = { alias = "b", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_b" }
+abc320-c = { alias = "c", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_c" }
+abc320-d = { alias = "d", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_d" }
+abc320-e = { alias = "e", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_e" }
+abc320-f = { alias = "f", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_f" }
+abc320-g = { alias = "g", problem = "https://atcoder.jp/contests/abc320/tasks/abc320_g" }
+
+[[bin]]
+name = "abc320-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc320-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc320-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc320-d"
+path = "src/bin/d.rs"
+
+[[bin]]
+name = "abc320-e"
+path = "src/bin/e.rs"
+
+[[bin]]
+name = "abc320-f"
+path = "src/bin/f.rs"
+
+[[bin]]
+name = "abc320-g"
+path = "src/bin/g.rs"
+
+[dependencies]
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+itertools = "=0.11.0"
+rustc-hash = "=1.1.0"
+rand = "=0.8.5"
+
+[dev-dependencies]
