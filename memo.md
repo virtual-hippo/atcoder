@@ -104,6 +104,13 @@ fn is_kaibun(s: &Vec<char>) -> bool{
 }
 ```
 
+
+```rust
+let text = "there".to_string();
+let rh = RollingHash::new(text.as_bytes());
+assert_eq!(rh.is_palindrome(0, text.len()), false);
+```
+
 ### 大文字と小文字
 ```rust
 let large_chars = vec!['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
