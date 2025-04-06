@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "ahc045",
+    #"ahc045/tools",
+    "lib",
+]
+
