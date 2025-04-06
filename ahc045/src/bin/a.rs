@@ -173,9 +173,46 @@ fn create_distance(input: &Input) -> Vec<Vec<usize>> {
     dist
 }
 
-// Main solver function
+// Query function to get the MST edges for a subset of vertices
+fn query(c: &[usize]) -> Vec<(usize, usize)> {
+    let mut stdin = LineSource::new(BufReader::new(io::stdin()));
+    macro_rules! input(($($tt:tt)*) => (proconio::input!(from &mut stdin, $($tt)*)));
+    print!("? {}", c.len());
+    for &city in c {
+        print!(" {}", city);
+    }
+    println!();
+    std::io::stdout().flush().unwrap();
+    input! {
+        ab: [(usize,usize); c.len()-1], // 都市の組
+    }
+    ab
+}
+
+// Response output function
+fn answer(groups: &[Vec<usize>], edges: &[Vec<(usize, usize)>]) {
+    println!("!");
+    for (i, group) in groups.iter().enumerate() {
+        println!(
+            "{}",
+            group
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(" ")
+        );
+        for edge in &edges[i] {
+            println!("{} {}", edge.0, edge.1);
+        }
+    }
+    std::io::stdout().flush().unwrap();
+}
+
+// Main solver function optimized with queries
 fn solve(input: &Input) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>) {
     let distance_cache = create_distance(input);
+    let mut query_count = 0;
+    let max_queries = input.q;
 
     // Available vertices
     let mut available: HashSet<usize> = (0..input.n).collect();
@@ -239,12 +276,14 @@ fn solve(input: &Input) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>) {
             }
         }
 
-        // Build MST for this group
-        let edges = if size <= 50 {
-            build_mst_kruskal(&group, &distance_cache)
-        } else {
-            build_mst_prim(&group, &distance_cache)
-        };
+        // Build MST using a combination of queries and algorithms
+        let edges = build_mst_with_queries(
+            &group,
+            &distance_cache,
+            input.l,
+            &mut query_count,
+            max_queries,
+        );
 
         vertex_groups.push(group);
         edge_groups.push(edges);
@@ -291,145 +330,199 @@ fn build_mst_kruskal(vertices: &[usize], distance_cache: &Vec<Vec<usize>>) -> Ve
     result
 }
 
-// Build MST using Prim's algorithm (better for dense graphs)
-fn build_mst_prim(vertices: &[usize], distance_cache: &Vec<Vec<usize>>) -> Vec<(usize, usize)> {
+// New function to build MST with the help of queries
+fn build_mst_with_queries(
+    vertices: &[usize],
+    distance_cache: &Vec<Vec<usize>>,
+    max_query_size: usize,
+    query_count: &mut usize,
+    max_queries: usize,
+) -> Vec<(usize, usize)> {
     if vertices.len() <= 1 {
         return Vec::new();
     }
 
-    // Set up priority queue
-    #[derive(Copy, Clone, Eq, PartialEq)]
-    struct Edge {
-        to: usize,
-        from: usize,
-        weight: usize,
+    // If we have no queries left or group is too small, use Kruskal's algorithm
+    if *query_count >= max_queries || vertices.len() <= 2 {
+        return build_mst_kruskal(vertices, distance_cache);
     }
 
-    impl Ord for Edge {
-        fn cmp(&self, other: &Self) -> Ordering {
-            self.weight.cmp(&other.weight)
-        }
-    }
+    let total_vertices = vertices.len();
 
-    impl PartialOrd for Edge {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
+    // Initialize UnionFind structure for tracking connected components
+    let mut uf = UnionFind::new(distance_cache.len());
+    let mut result = Vec::with_capacity(total_vertices - 1);
 
-    let mut result = Vec::with_capacity(vertices.len() - 1);
-    let mut visited = HashSet::new();
-    let mut pq = BinaryHeap::new();
+    // Use queries for subgroups of vertices
+    if total_vertices <= max_query_size {
+        // If the whole group fits in one query, just query once
+        *query_count += 1;
+        return query(vertices);
+    } else {
+        // Divide vertices into clusters to query
+        let mut clusters = divide_into_clusters(vertices, distance_cache, max_query_size);
 
-    // Start with first vertex
-    visited.insert(vertices[0]);
+        // Sort clusters by size to prioritize larger clusters for querying
+        clusters.sort_by_key(|c| -(c.len() as i32));
 
-    // Add edges from first vertex
-    for i in 1..vertices.len() {
-        let weight = distance_cache[vertices[0]][vertices[i]];
-        pq.push(Reverse(Edge {
-            from: vertices[0],
-            to: vertices[i],
-            weight,
-        }));
-    }
+        // Query each cluster and add edges to the result
+        let mut queried_edges = Vec::new();
+        for cluster in clusters {
+            if cluster.len() >= 3 && cluster.len() <= max_query_size && *query_count < max_queries {
+                // Query this cluster
+                *query_count += 1;
+                let edges = query(&cluster);
+                queried_edges.extend(edges);
 
-    // Process edges
-    while let Some(Reverse(edge)) = pq.pop() {
-        if visited.contains(&edge.to) {
-            continue;
-        }
+                // Update UnionFind structure
+                for &(u, v) in &queried_edges {
+                    uf.union(u, v);
+                }
 
-        visited.insert(edge.to);
-        result.push((edge.from, edge.to));
-
-        for &v in vertices {
-            if !visited.contains(&v) {
-                let weight = distance_cache[edge.to][v];
-                pq.push(Reverse(Edge {
-                    from: edge.to,
-                    to: v,
-                    weight,
-                }));
+                // If we've used all our queries, break
+                if *query_count >= max_queries {
+                    break;
+                }
             }
         }
 
-        if visited.len() == vertices.len() {
-            break;
+        // Add all queried edges to the result
+        result.extend(queried_edges);
+
+        // If we haven't formed a complete MST yet, fill in the gaps using Kruskal
+        if result.len() < total_vertices - 1 {
+            // Create all remaining edges
+            let mut remaining_edges = Vec::new();
+            for i in 0..total_vertices {
+                for j in (i + 1)..total_vertices {
+                    let u = vertices[i];
+                    let v = vertices[j];
+                    if !uf.connected(u, v) {
+                        let weight = distance_cache[u][v];
+                        remaining_edges.push((u, v, weight));
+                    }
+                }
+            }
+
+            // Sort by weight
+            remaining_edges.sort_by_key(|&(_, _, weight)| weight);
+
+            // Complete the MST
+            for (u, v, _) in remaining_edges {
+                if !uf.connected(u, v) {
+                    uf.union(u, v);
+                    result.push((u, v));
+
+                    if result.len() == total_vertices - 1 {
+                        break;
+                    }
+                }
+            }
         }
     }
 
     result
 }
 
-fn query(c: &[usize]) -> Vec<(usize, usize)> {
-    let mut stdin = LineSource::new(BufReader::new(io::stdin()));
-    macro_rules! input(($($tt:tt)*) => (proconio::input!(from &mut stdin, $($tt)*)));
-    print!("? {}", c.len());
-    for &city in c {
-        print!(" {}", city);
+// Helper function to divide vertices into clusters for querying
+fn divide_into_clusters(
+    vertices: &[usize],
+    distance_cache: &Vec<Vec<usize>>,
+    max_size: usize,
+) -> Vec<Vec<usize>> {
+    if vertices.len() <= max_size {
+        return vec![vertices.to_vec()];
     }
-    println!();
-    std::io::stdout().flush().unwrap();
-    input! {
-        ab: [(usize,usize); c.len()-1], // 都市の組
-    }
-    ab
-}
 
-fn answer(groups: &[Vec<usize>], edges: &[Vec<(usize, usize)>]) {
-    println!("!");
-    for (i, group) in groups.iter().enumerate() {
-        println!(
-            "{}",
-            group
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(" ")
-        );
-        for edge in &edges[i] {
-            println!("{} {}", edge.0, edge.1);
+    // Create a graph structure for clustering
+    let mut clusters = Vec::new();
+    let mut visited = HashSet::new();
+
+    // Use a simple clustering approach
+    for &start_vertex in vertices {
+        if visited.contains(&start_vertex) {
+            continue;
         }
-    }
-    std::io::stdout().flush().unwrap();
-}
 
-fn _sample(input: &Input) {
-    let centers = input
-        .square
-        .iter()
-        .map(|Square { lx, rx, ly, ry }| ((lx + rx) / 2, (ly + ry) / 2))
-        .collect::<Vec<(usize, usize)>>();
+        // Start a new cluster
+        let mut cluster = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(start_vertex);
+        visited.insert(start_vertex);
 
-    let mut cities: Vec<usize> = (0..input.n).collect();
-    cities.sort_by_key(|&i| centers[i]);
+        // Add nearest neighbors to the cluster
+        while let Some(v) = queue.pop_front() {
+            cluster.push(v);
 
-    let mut groups = Vec::new();
-    let mut start_idx = 0;
-    for &group_size in &input.g {
-        groups.push(cities[start_idx..start_idx + group_size].to_vec());
-        start_idx += group_size;
-    }
+            if cluster.len() >= max_size {
+                break;
+            }
 
-    let mut edges: Vec<Vec<(usize, usize)>> = vec![Vec::new(); input.m];
-    for k in 0..input.m {
-        for i in (0..input.g[k] - 1).step_by(2) {
-            if i < input.g[k] - 2 {
-                let ret = query(&groups[k][i..i + 3]);
-                edges[k].extend(ret);
-            } else {
-                edges[k].push((groups[k][i] as usize, groups[k][i + 1] as usize));
+            // Find the closest unvisited vertices
+            let mut neighbors = Vec::new();
+            for &u in vertices {
+                if !visited.contains(&u) {
+                    neighbors.push((u, distance_cache[v][u]));
+                }
+            }
+
+            // Sort neighbors by distance
+            neighbors.sort_by_key(|&(_, dist)| dist);
+
+            // Add closest neighbors to the queue
+            for (u, _) in neighbors {
+                if !visited.contains(&u) && cluster.len() < max_size {
+                    visited.insert(u);
+                    queue.push_back(u);
+                }
             }
         }
+
+        if !cluster.is_empty() {
+            clusters.push(cluster);
+        }
     }
 
-    answer(&groups, &edges);
+    // If we have very small clusters, merge them
+    merge_small_clusters(&mut clusters, max_size);
+
+    clusters
+}
+
+// Helper function to merge small clusters
+fn merge_small_clusters(clusters: &mut Vec<Vec<usize>>, max_size: usize) {
+    // Sort clusters by size
+    clusters.sort_by_key(|c| c.len());
+
+    // Try to merge small clusters
+    let mut i = 0;
+    while i < clusters.len() {
+        if clusters[i].len() < 3 {
+            // Too small to query effectively
+            // Find another small cluster to merge with
+            let mut merged = false;
+            for j in (i + 1)..clusters.len() {
+                if clusters[i].len() + clusters[j].len() <= max_size {
+                    // Merge clusters[i] into clusters[j]
+                    let to_merge = clusters[i].clone();
+                    clusters[j].extend(to_merge);
+                    clusters.remove(i);
+                    merged = true;
+                    break;
+                }
+            }
+
+            if !merged {
+                i += 1;
+            }
+        } else {
+            i += 1;
+        }
+    }
 }
 
 fn main() {
     let input = Input::from_stdin();
-    // _sample(&input);
     let ans = solve(&input);
     answer(&ans.0, &ans.1);
 }
