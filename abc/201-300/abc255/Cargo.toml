@@ -46,6 +46,11 @@ name = "abc255-g"
 path = "src/bin/g.rs"
 
 [dependencies]
-proconio = { version = "=0.3.6", features = ["derive"] }
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+itertools = "=0.11.0"
+rustc-hash = "=1.1.0"
+rand = "=0.8.5"
 
 [dev-dependencies]

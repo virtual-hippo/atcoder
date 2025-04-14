@@ -1,17 +1,18 @@
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-// use std::collections::VecDeque;
-// use std::collections::BinaryHeap;
-// use proconio::marker::Chars;
-use proconio::input;
+#![allow(unused_imports)]
+use ac_library::*;
+use itertools::*;
+use proconio::{fastout, input, marker::Chars};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::VecDeque;
+use superslice::Ext;
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
-        // (h,w): (usize, usize),
-        // s: Chars,
-        // a: [usize; h],
     }
-    println!("Yes");
+
+    let ans = 0;
+    println!("{}", ans);
 }
 

@@ -1,9 +1,13 @@
-use proconio::input;
+#![allow(unused_imports)]
+use ac_library::*;
+use itertools::*;
+use proconio::{fastout, input, marker::Chars};
 
 fn calc_d(pos1: (i64, i64), pos2: (i64, i64)) -> i64 {
-    (pos2.0 - pos1.0).pow(2) + (pos2.1 - pos1.1).pow(2) 
+    (pos2.0 - pos1.0).pow(2) + (pos2.1 - pos1.1).pow(2)
 }
 
+#[fastout]
 fn main() {
     input! {
         n: usize,
@@ -11,17 +15,18 @@ fn main() {
         a: [usize; k],
         xy: [(i64, i64); n],
     }
-    let mut people = vec![false; n+1];
-    for i in 0..k {
-        people[a[i]] = true;
-    }
-    let max = (1..n+1).map(|i|{
-        if people[i] {
-            0
-        } else {
-            a.iter().map(|j| calc_d(xy[i-1], xy[j-1])).min().unwrap()
-        }
-    }).max().unwrap();
-    println!("{}", (max as f64).sqrt());
-}
 
+    let mut mx = 0;
+
+    for i in 0..n {
+        let mut mn = i64::MAX;
+        for j in 0..k {
+            let p = a[j] - 1;
+            mn = mn.min(calc_d(xy[i], xy[p]));
+        }
+        mx = mx.max(mn);
+    }
+
+    let ans = (mx as f64).sqrt();
+    println!("{}", ans);
+}
