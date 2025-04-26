@@ -7,6 +7,9 @@ use std::time::{Duration, Instant};
 use std::{collections::VecDeque, usize};
 use superslice::Ext;
 
+const N: usize = 20;
+const M: usize = 40;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Pos {
     x: usize,
@@ -40,7 +43,7 @@ impl Input {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 enum Dir {
     Up,
     Down,
@@ -82,13 +85,16 @@ impl std::fmt::Display for Action {
 
 #[derive(Clone)]
 struct Info {
-    state: Vec<Vec<char>>, // 座標の状態
-    next: usize,           // 次の目的地
-    last_visited: usize,   // 最後に訪れた目的地
-    now_pos: Pos,          // 現在の座標
-    hisotry: Vec<Action>,  // 行動履歴
+    state: Vec<Vec<char>>,       // 座標の状態
+    next: usize,                 // 次の目的地
+    last_visited: usize,         // 最後に訪れた目的地
+    now_pos: Pos,                // 現在の座標
+    action_hisotry: Vec<Action>, // 行動履歴
+    position_hisotry: Vec<Pos>,  // 座標履歴
     start_time: Instant,
     time_limit: Duration,
+    best_answer: (usize, Vec<Action>), // 最適解
+    candidate: Vec<(Pos, Vec<usize>)>, // 壁の建設候補
 }
 
 impl Info {
@@ -102,30 +108,40 @@ impl Info {
             next: 1,
             last_visited: 0,
             now_pos: input.goal[0],
-            hisotry: vec![],
+            action_hisotry: vec![],
+            position_hisotry: vec![],
             time_limit: Duration::from_millis(1935),
             start_time: Instant::now(),
+            best_answer: (0, vec![]),
+            candidate: vec![],
         }
     }
 
     fn is_time_up(&self) -> bool {
         self.start_time.elapsed() >= self.time_limit
     }
+
+    fn update_best_answer(&mut self) {
+        let new_score = calculate_score(self);
+        if new_score > self.best_answer.0 {
+            self.best_answer = (new_score, self.action_hisotry.clone());
+        }
+    }
 }
 
 /// 出力した行動列の長さを T、訪れることが出来た目的地の数をm としたとき、以下のスコアが得られる。
 /// m<M−1 の場合、 m+1
 /// m=M−1 の場合、M+2NM−T
-fn calculate_score(input: &Input, info: &Info) -> usize {
-    if info.last_visited < input.m - 1 {
+fn calculate_score(info: &Info) -> usize {
+    if info.last_visited < M - 1 {
         info.last_visited
     } else {
-        input.m + 2 * input.n * input.m - info.hisotry.len()
+        M + 2 * N * M - info.action_hisotry.len()
     }
 }
 
 fn print_result(info: &Info) {
-    for action in &info.hisotry {
+    for action in &info.action_hisotry {
         println!("{}", action);
     }
 }
@@ -192,7 +208,11 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
     let mut best_action = None;
     let mut min_dist = current_dist;
 
+    // ------------------------------------------------------------------------------------------------
     // Move actions
+    // ------------------------------------------------------------------------------------------------
+    // TODO: 壁にぶつかる場合はスキップする
+    // TODO: 壁が次のゴールである場合壁を壊す
     let moves = [
         (Dir::Up, Pos { x: now.x.saturating_sub(1), y: now.y }),
         (
@@ -225,7 +245,9 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
         }
     }
 
+    // ------------------------------------------------------------------------------------------------
     // Slide actions
+    // ------------------------------------------------------------------------------------------------
     let slides = [
         (Dir::Up, find_latest_wall(&Dir::Up, info)),
         (Dir::Down, find_latest_wall(&Dir::Down, info)),
@@ -264,12 +286,13 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
             _ => {},
         }
         // eprintln!("Now: {} {}", info.now_pos.x, info.now_pos.y);
-        info.hisotry.push(action);
+        info.position_hisotry.push(info.now_pos);
+        info.action_hisotry.push(action);
     }
 }
 
 fn create_initial_answer(input: &Input, info: &mut Info) {
-    while info.hisotry.len() < 2 * input.n * input.m && info.next < input.m {
+    while info.action_hisotry.len() < 2 * input.n * input.m && info.next < input.m {
         let next_goal = input.goal[info.next];
         do_best_action(input, info, &next_goal);
 
@@ -281,9 +304,108 @@ fn create_initial_answer(input: &Input, info: &mut Info) {
     }
 }
 
+fn create_candidate_to_build_wall(input: &Input, info: &mut Info) {
+    let mut last_pos = info.now_pos;
+    let mut pre_dir = None;
+
+    for i in (0..info.action_hisotry.len()).rev() {
+        let action = &info.action_hisotry[i];
+        // 同じ方向への Move Actionが続く場合は last_pos の隣を壁の建設候補とする
+        if let Action::Move(dir) = action {
+            match pre_dir {
+                None => {
+                    last_pos = info.position_hisotry[i];
+                    pre_dir = Some(dir);
+                },
+                Some(pre_dir_val) => {
+                    let wall_pos = match pre_dir_val {
+                        Dir::Up => {
+                            if last_pos.x == 0 {
+                                None
+                            } else {
+                                Some(Pos { x: last_pos.x - 1, y: last_pos.y })
+                            }
+                        },
+                        Dir::Down => {
+                            if last_pos.x == input.n - 1 {
+                                None
+                            } else {
+                                Some(Pos { x: last_pos.x + 1, y: last_pos.y })
+                            }
+                        },
+                        Dir::Left => {
+                            if last_pos.y == 0 {
+                                None
+                            } else {
+                                Some(Pos { x: last_pos.x, y: last_pos.y - 1 })
+                            }
+                        },
+                        Dir::Right => {
+                            if last_pos.y == input.n - 1 {
+                                None
+                            } else {
+                                Some(Pos { x: last_pos.x, y: last_pos.y + 1 })
+                            }
+                        },
+                    };
+                    if let Some(wall_pos) = wall_pos {
+                        // 壁の建設候補を追加
+                        info.candidate.push((wall_pos, vec![]));
+                    }
+
+                    //
+                    last_pos = info.position_hisotry[i];
+                    pre_dir = None;
+                },
+            }
+        } else {
+            if let Some(dir) = pre_dir {
+                let wall_pos = match dir {
+                    Dir::Up => {
+                        if last_pos.x == 0 {
+                            None
+                        } else {
+                            Some(Pos { x: last_pos.x - 1, y: last_pos.y })
+                        }
+                    },
+                    Dir::Down => {
+                        if last_pos.x == input.n - 1 {
+                            None
+                        } else {
+                            Some(Pos { x: last_pos.x + 1, y: last_pos.y })
+                        }
+                    },
+                    Dir::Left => {
+                        if last_pos.y == 0 {
+                            None
+                        } else {
+                            Some(Pos { x: last_pos.x, y: last_pos.y - 1 })
+                        }
+                    },
+                    Dir::Right => {
+                        if last_pos.y == input.n - 1 {
+                            None
+                        } else {
+                            Some(Pos { x: last_pos.x, y: last_pos.y + 1 })
+                        }
+                    },
+                };
+                if let Some(wall_pos) = wall_pos {
+                    // 壁の建設候補を追加
+                    info.candidate.push((wall_pos, vec![]));
+                }
+            }
+            pre_dir = None;
+        }
+    }
+}
+
 fn solve(input: &Input, info: &mut Info) {
     // 初期解作成
     create_initial_answer(input, info);
+
+    // 壁の建設候補を作成
+    create_candidate_to_build_wall(input, info);
 
     print_result(info);
 }
