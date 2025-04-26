@@ -195,10 +195,8 @@ fn find_latest_wall(dir: &Dir, info: &Info) -> Pos {
     }
 }
 
-/// 以下の2つの方法の内，次の目的地との距離が近くなるのはどれかを判定し実行する
-/// 1. Move: 上下左右どれかに1マスだけ移動する
-/// 2. Slide: 上下左右どれかに可能な限り移動する (現在の座標 (x,y) とすると (0,y) or (x,0) or (n,y) or (x,n) となるように移動する)
-fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
+/// 最適な行動を選択する
+fn select_action(input: &Input, info: &mut Info, next_goal: &Pos) -> Option<Action> {
     let now = info.now_pos;
 
     // 現在地から次の目的地までのマンハッタン距離
@@ -211,8 +209,6 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
     // ------------------------------------------------------------------------------------------------
     // Move actions
     // ------------------------------------------------------------------------------------------------
-    // TODO: 壁にぶつかる場合はスキップする
-    // TODO: 壁が次のゴールである場合壁を壊す
     let moves = [
         (Dir::Up, Pos { x: now.x.saturating_sub(1), y: now.y }),
         (
@@ -235,7 +231,18 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
     for (dir, pos) in moves.iter() {
         if *pos == now {
             continue;
-        } // Skip if can't move
+        }
+
+        // 壁かつ目的地の場合は壁を壊す
+        if info.state[pos.x][pos.y] == '#' && *pos == *next_goal {
+            return Some(Action::Apply(dir.clone()));
+        }
+
+        // TODO: 壁にぶつかる場合の最適な行動を考える
+        // 壁かつ目的地ではない場合は壁を避けたいがとりあえず壊す
+        if info.state[pos.x][pos.y] == '#' {
+            return Some(Action::Apply(dir.clone()));
+        }
 
         let dist = calculate_distance(&pos, &next_goal);
 
@@ -267,6 +274,15 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
             best_action = Some(Action::Slide(dir.clone()));
         }
     }
+
+    best_action
+}
+
+/// 以下の2つの方法の内，次の目的地との距離が近くなるのはどれかを判定し実行する
+/// 1. Move: 上下左右どれかに1マスだけ移動する
+/// 2. Slide: 上下左右どれかに可能な限り移動する (現在の座標 (x,y) とすると (0,y) or (x,0) or (n,y) or (x,n) となるように移動する)
+fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
+    let best_action = select_action(input, info, next_goal);
 
     // Execute the best action
     if let Some(action) = best_action {
