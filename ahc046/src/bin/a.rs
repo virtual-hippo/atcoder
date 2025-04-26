@@ -102,6 +102,17 @@ impl Info {
     }
 }
 
+/// 出力した行動列の長さを T、訪れることが出来た目的地の数をm としたとき、以下のスコアが得られる。
+/// m<M−1 の場合、 m+1
+/// m=M−1 の場合、M+2NM−T
+fn calculate_score(input: &Input, info: &Info) -> usize {
+    if info.last_visited < input.m - 1 {
+        info.last_visited
+    } else {
+        input.m + 2 * input.n * input.m - info.hisotry.len()
+    }
+}
+
 fn print_result(info: &Info) {
     for action in &info.hisotry {
         println!("{}", action);
@@ -241,7 +252,7 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
             },
             _ => {},
         }
-        eprintln!("Now: {} {}", info.now_pos.x, info.now_pos.y);
+        // eprintln!("Now: {} {}", info.now_pos.x, info.now_pos.y);
         info.hisotry.push(action);
     }
 }
