@@ -94,7 +94,7 @@ struct Info {
     start_time: Instant,
     time_limit: Duration,
     best_answer: (usize, Vec<Action>), // 最適解
-    candidate: Vec<(Pos, Vec<usize>)>, // 壁の建設候補
+    candidate: FxHashMap<Pos, usize>,  // 壁の建設候補
 }
 
 impl Info {
@@ -113,7 +113,7 @@ impl Info {
             time_limit: Duration::from_millis(1935),
             start_time: Instant::now(),
             best_answer: (0, vec![]),
-            candidate: vec![],
+            candidate: FxHashMap::default(),
         }
     }
 
@@ -323,6 +323,7 @@ fn create_initial_answer(input: &Input, info: &mut Info) {
 fn create_candidate_to_build_wall(input: &Input, info: &mut Info) {
     let mut last_pos = info.now_pos;
     let mut pre_dir = None;
+    let mut p_m = input.goal.len() - 1;
 
     for i in (0..info.action_hisotry.len()).rev() {
         let action = &info.action_hisotry[i];
@@ -366,7 +367,9 @@ fn create_candidate_to_build_wall(input: &Input, info: &mut Info) {
                     };
                     if let Some(wall_pos) = wall_pos {
                         // 壁の建設候補を追加
-                        info.candidate.push((wall_pos, vec![]));
+                        if !info.candidate.contains_key(&wall_pos) {
+                            info.candidate.insert(wall_pos, p_m);
+                        }
                     }
 
                     //
@@ -408,10 +411,15 @@ fn create_candidate_to_build_wall(input: &Input, info: &mut Info) {
                 };
                 if let Some(wall_pos) = wall_pos {
                     // 壁の建設候補を追加
-                    info.candidate.push((wall_pos, vec![]));
+                    if !info.candidate.contains_key(&wall_pos) {
+                        info.candidate.insert(wall_pos, p_m);
+                    }
                 }
             }
             pre_dir = None;
+        }
+        if info.position_hisotry[i] == input.goal[p_m.saturating_sub(1)] {
+            p_m = p_m.saturating_sub(1);
         }
     }
 }
