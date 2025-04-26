@@ -3,6 +3,7 @@ use ac_library::*;
 use itertools::*;
 use proconio::{fastout, input, marker::Chars};
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::time::{Duration, Instant};
 use std::{collections::VecDeque, usize};
 use superslice::Ext;
 
@@ -86,11 +87,15 @@ struct Info {
     last_visited: usize,   // 最後に訪れた目的地
     now_pos: Pos,          // 現在の座標
     hisotry: Vec<Action>,  // 行動履歴
+    start_time: Instant,
+    time_limit: Duration,
 }
 
 impl Info {
     fn new(input: &Input) -> Self {
         let state = vec![vec!['.'; input.n]; input.n];
+        let time_limit = Duration::from_millis(1935);
+        let start_time = Instant::now();
 
         Self {
             state,
@@ -98,7 +103,13 @@ impl Info {
             last_visited: 0,
             now_pos: input.goal[0],
             hisotry: vec![],
+            time_limit: Duration::from_millis(1935),
+            start_time: Instant::now(),
         }
+    }
+
+    fn is_time_up(&self) -> bool {
+        self.start_time.elapsed() >= self.time_limit
     }
 }
 
