@@ -268,7 +268,7 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
     }
 }
 
-fn solve(input: &Input, info: &mut Info) {
+fn create_initial_answer(input: &Input, info: &mut Info) {
     while info.hisotry.len() < 2 * input.n * input.m && info.next < input.m {
         let next_goal = input.goal[info.next];
         do_best_action(input, info, &next_goal);
@@ -279,6 +279,11 @@ fn solve(input: &Input, info: &mut Info) {
             info.next += 1;
         }
     }
+}
+
+fn solve(input: &Input, info: &mut Info) {
+    // 初期解作成
+    create_initial_answer(input, info);
 
     print_result(info);
 }
