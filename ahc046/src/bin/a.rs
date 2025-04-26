@@ -1,0 +1,225 @@
+#![allow(unused_imports)]
+use ac_library::*;
+use itertools::*;
+use proconio::{fastout, input, marker::Chars};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::{collections::VecDeque, usize};
+use superslice::Ext;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct Pos {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Clone)]
+struct Input {
+    n: usize,       // n=20 (座標)
+    m: usize,       // m=40 (目的地の個数)
+    goal: Vec<Pos>, // 目的地の座標
+}
+
+impl Input {
+    fn from_stdin() -> Self {
+        input! {
+            n: usize, // 都市の個数 n=800
+            m: usize, // 都市のグループの個数 1 <= m <= 400
+        }
+
+        let mut goal = Vec::with_capacity(m);
+        for _ in 0..m {
+            input! {
+                x: usize,
+                y: usize,
+            }
+            goal.push(Pos { x, y });
+        }
+
+        Self { n, m, goal }
+    }
+}
+
+#[derive(Clone)]
+enum Dir {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Dir {
+    fn into_char(&self) -> char {
+        match self {
+            Dir::Up => 'U',
+            Dir::Down => 'D',
+            Dir::Left => 'L',
+            Dir::Right => 'R',
+        }
+    }
+}
+impl std::fmt::Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.into_char())
+    }
+}
+
+#[derive(Clone)]
+enum Action {
+    Move(Dir),
+    Slide(Dir),
+    Apply(Dir),
+}
+impl std::fmt::Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Action::Apply(dir) => write!(f, "A {}", dir),
+            Action::Move(dir) => write!(f, "M {}", dir),
+            Action::Slide(dir) => write!(f, "S {}", dir),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct Info {
+    state: Vec<Vec<char>>, // 座標の状態
+    next: usize,           // 次の目的地
+    last_visited: usize,   // 最後に訪れた目的地
+    now_pos: Pos,          // 現在の座標
+    hisotry: Vec<Action>,  // 行動履歴
+}
+
+impl Info {
+    fn new(input: &Input) -> Self {
+        let state = vec![vec!['.'; input.n]; input.n];
+
+        Self {
+            state,
+            next: 1,
+            last_visited: 0,
+            now_pos: input.goal[0],
+            hisotry: vec![],
+        }
+    }
+}
+
+fn print_result(info: &Info) {
+    for action in &info.hisotry {
+        println!("{}", action);
+    }
+}
+
+/// 2点間のマンハッタン距離を計算する
+fn calculate_distance(a: &Pos, b: &Pos) -> usize {
+    a.x.abs_diff(b.x) + a.y.abs_diff(b.y)
+}
+
+/// 以下の2つの方法の内，次の目的地との距離が近くなるのはどれかを判定し実行する
+/// 1. Move: 上下左右どれかに1マスだけ移動する
+/// 2. Slide: 上下左右どれかに可能な限り移動する (現在の座標 (x,y) とすると (0,y) or (x,0) or (n,y) or (x,n) となるように移動する)
+fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
+    let now = info.now_pos;
+
+    // 現在地から次の目的地までのマンハッタン距離
+    let current_dist = calculate_distance(&now, &next_goal);
+
+    // 各方向への移動後の距離を計算
+    let mut best_action = None;
+    let mut min_dist = current_dist;
+
+    // Move actions
+    let moves = [
+        (Dir::Up, Pos { x: now.x.saturating_sub(1), y: now.y }),
+        (
+            Dir::Down,
+            Pos {
+                x: (now.x + 1).min(input.n - 1),
+                y: now.y,
+            },
+        ),
+        (Dir::Left, Pos { x: now.x, y: now.y.saturating_sub(1) }),
+        (
+            Dir::Right,
+            Pos {
+                x: now.x,
+                y: (now.y + 1).min(input.n - 1),
+            },
+        ),
+    ];
+
+    for (dir, pos) in moves.iter() {
+        if *pos == now {
+            continue;
+        } // Skip if can't move
+
+        let dist = calculate_distance(&pos, &next_goal);
+
+        if dist < min_dist {
+            min_dist = dist;
+            best_action = Some(Action::Move(dir.clone()));
+        }
+    }
+
+    // Slide actions
+    let slides = [
+        (Dir::Up, Pos { x: 0, y: now.y }),
+        (Dir::Down, Pos { x: input.n - 1, y: now.y }),
+        (Dir::Left, Pos { x: now.x, y: 0 }),
+        (Dir::Right, Pos { x: now.x, y: input.n - 1 }),
+    ];
+
+    for (dir, pos) in slides.iter() {
+        if *pos == now {
+            continue;
+        } // Skip if already at edge
+
+        let dist = calculate_distance(&pos, &next_goal);
+
+        if dist < min_dist {
+            min_dist = dist;
+            best_action = Some(Action::Slide(dir.clone()));
+        }
+    }
+
+    // Execute the best action
+    if let Some(action) = best_action {
+        match &action {
+            Action::Move(dir) => match dir {
+                Dir::Up => info.now_pos.x -= 1,
+                Dir::Down => info.now_pos.x += 1,
+                Dir::Left => info.now_pos.y -= 1,
+                Dir::Right => info.now_pos.y += 1,
+            },
+            Action::Slide(dir) => match dir {
+                Dir::Up => info.now_pos.x = 0,
+                Dir::Down => info.now_pos.x = input.n - 1,
+                Dir::Left => info.now_pos.y = 0,
+                Dir::Right => info.now_pos.y = input.n - 1,
+            },
+            _ => {},
+        }
+        eprintln!("Now: {} {}", info.now_pos.x, info.now_pos.y);
+        info.hisotry.push(action);
+    }
+}
+
+fn solve(input: &Input, info: &mut Info) {
+    while info.hisotry.len() < 2 * input.n * input.m && info.next < input.m {
+        let next_goal = input.goal[info.next];
+        do_best_action(input, info, &next_goal);
+
+        // Check if we reached the next goal
+        if info.now_pos == next_goal {
+            info.last_visited = info.next;
+            info.next += 1;
+        }
+    }
+
+    print_result(info);
+}
+
+#[fastout]
+fn main() {
+    let input = Input::from_stdin();
+    let mut info = Info::new(&input);
+    solve(&input, &mut info);
+}
