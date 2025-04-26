@@ -19,5 +19,6 @@
         "--workspace",
         "--message-format=json",
         "--all-targets"
-    ]
+    ],
+    "accessibility.voice.speechLanguage": "ja-JP"
 }
