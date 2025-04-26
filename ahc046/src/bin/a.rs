@@ -113,6 +113,50 @@ fn calculate_distance(a: &Pos, b: &Pos) -> usize {
     a.x.abs_diff(b.x) + a.y.abs_diff(b.y)
 }
 
+/// 現在地から進む方向において最初にぶつかる壁を探す
+fn find_latest_wall(dir: &Dir, info: &Info) -> Pos {
+    match dir {
+        Dir::Up => {
+            for i in (0..info.now_pos.x).rev() {
+                if info.state[i][info.now_pos.y] == '#' {
+                    return Pos { x: i + 1, y: info.now_pos.y };
+                }
+            }
+            Pos { x: 0, y: info.now_pos.y }
+        },
+        Dir::Down => {
+            for i in info.now_pos.x + 1..info.state.len() {
+                if info.state[i][info.now_pos.y] == '#' {
+                    return Pos { x: i - 1, y: info.now_pos.y };
+                }
+            }
+            Pos {
+                x: info.state.len() - 1,
+                y: info.now_pos.y,
+            }
+        },
+        Dir::Left => {
+            for i in (0..info.now_pos.y).rev() {
+                if info.state[info.now_pos.x][i] == '#' {
+                    return Pos { x: info.now_pos.x, y: i + 1 };
+                }
+            }
+            Pos { x: info.now_pos.x, y: 0 }
+        },
+        Dir::Right => {
+            for i in info.now_pos.y + 1..info.state[0].len() {
+                if info.state[info.now_pos.x][i] == '#' {
+                    return Pos { x: info.now_pos.x, y: i - 1 };
+                }
+            }
+            Pos {
+                x: info.now_pos.x,
+                y: info.state[0].len() - 1,
+            }
+        },
+    }
+}
+
 /// 以下の2つの方法の内，次の目的地との距離が近くなるのはどれかを判定し実行する
 /// 1. Move: 上下左右どれかに1マスだけ移動する
 /// 2. Slide: 上下左右どれかに可能な限り移動する (現在の座標 (x,y) とすると (0,y) or (x,0) or (n,y) or (x,n) となるように移動する)
@@ -161,10 +205,10 @@ fn do_best_action(input: &Input, info: &mut Info, next_goal: &Pos) {
 
     // Slide actions
     let slides = [
-        (Dir::Up, Pos { x: 0, y: now.y }),
-        (Dir::Down, Pos { x: input.n - 1, y: now.y }),
-        (Dir::Left, Pos { x: now.x, y: 0 }),
-        (Dir::Right, Pos { x: now.x, y: input.n - 1 }),
+        (Dir::Up, find_latest_wall(&Dir::Up, info)),
+        (Dir::Down, find_latest_wall(&Dir::Down, info)),
+        (Dir::Left, find_latest_wall(&Dir::Left, info)),
+        (Dir::Right, find_latest_wall(&Dir::Right, info)),
     ];
 
     for (dir, pos) in slides.iter() {
