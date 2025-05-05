@@ -6,7 +6,7 @@ pub mod rolling_hash {
     ///
     /// Mint
     ///
-    #[derive(Copy, Clone)]
+    #[derive(Copy, Clone, Debug, Eq, Hash)]
     pub struct Mint {
         v0: u64,
         v1: u64,
@@ -16,10 +16,7 @@ pub mod rolling_hash {
         const M1: u64 = 1_000_000_033;
 
         pub fn new(v0: u64, v1: u64) -> Mint {
-            Mint {
-                v0: v0 % Self::M0,
-                v1: v1 % Self::M1,
-            }
+            Mint { v0: v0 % Self::M0, v1: v1 % Self::M1 }
         }
     }
 
@@ -50,6 +47,24 @@ pub mod rolling_hash {
         }
     }
 
+    /// RollingHash 作成用ファクトリ
+    /// 同じファクトリ, 同じ文字列から作成された RollingHash は同じハッシュ値を持つ
+    /// 異なるファクトリから作成された RollingHash は同じ文字列でも異なるハッシュ値を持つ
+    pub struct RollingHashBuilder(Mint);
+    impl RollingHashBuilder {
+        pub fn new() -> Self {
+            let mut rng = rand::prelude::ThreadRng::default();
+            let randam_value0 = rng.gen_range(2..8197);
+            let randam_value1 = rng.gen_range(2..8197);
+            let base = Mint::new(randam_value0, randam_value1);
+            Self(base)
+        }
+
+        pub fn build(&self, s: &[u8]) -> RollingHash {
+            RollingHash::new(s, self.0)
+        }
+    }
+
     ///
     /// RollingHash
     /// ハッシュが衝突しないために 2 つの m を保持する Mint を使う
@@ -61,12 +76,8 @@ pub mod rolling_hash {
     }
 
     impl RollingHash {
-        pub fn new(s: &[u8]) -> Self {
+        fn new(s: &[u8], base: Mint) -> Self {
             let n = s.len();
-            let mut rng = rand::prelude::ThreadRng::default();
-            let randam_value0 = rng.gen_range(2..8197);
-            let randam_value1 = rng.gen_range(2..8197);
-            let base = Mint::new(randam_value0, randam_value1);
 
             let mut hash = vec![Mint::new(0, 0); n + 1];
             let mut hash_rev = vec![Mint::new(0, 0); n + 1];
@@ -81,11 +92,7 @@ pub mod rolling_hash {
 
                 power[i + 1] = power[i] * base;
             }
-            Self {
-                hash,
-                hash_rev,
-                power,
-            }
+            Self { hash, hash_rev, power }
         }
 
         /// S[l, r) のハッシュを求める
@@ -112,9 +119,10 @@ mod tests {
     use super::rolling_hash::*;
 
     #[test]
-    fn it_works() {
+    fn it_works0() {
+        let rolling_hash_builder = RollingHashBuilder::new();
         let text = "there".to_string();
-        let rh = RollingHash::new(text.as_bytes());
+        let rh = rolling_hash_builder.build(text.as_bytes());
 
         // "there" is palindrome
         assert_eq!(rh.is_palindrome(0, text.len()), false);
@@ -124,5 +132,21 @@ mod tests {
 
         // "ere" is palindrome
         assert_eq!(rh.is_palindrome(2, text.len()), true);
+    }
+
+    #[test]
+    fn it_works1() {
+        let rolling_hash_builder = RollingHashBuilder::new();
+
+        let text0 = "there".to_string();
+        let rh0 = rolling_hash_builder.build(text0.as_bytes());
+
+        let text1 = "th".to_string();
+        let rh1 = rolling_hash_builder.build(text1.as_bytes());
+
+        let hash0 = rh0.get_hash(0, text1.len());
+        let hash1 = rh1.get_hash(0, text1.len());
+
+        assert_eq!(hash0 == hash1, true);
     }
 }
