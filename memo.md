@@ -266,6 +266,39 @@ for bit in 0..(1<<n) {
 }
 ```
 
+### N 進法についての全探索
+```rust
+// 3進法を例にする
+
+// N 進法で表現したときに最大 8 桁までを探索する
+let n = 8;
+
+let p3 = (0..n).fold(vec![1_u64], |mut acc, i| {
+    let v = acc[i] * 3;
+    acc.push(v);
+    acc
+});
+
+for s in 0..p3[n] {
+    // `s / p3[i] % 3` で i 桁目の数字を取り出している
+    // 一見何をやっているかイメージしづらいが, 10進法で考えるとイメージしやすい
+    for v in (0..n).map(|i| s / p3[i] % 3) {
+        match v {
+            0 => {
+                // do nothing
+            },
+            1 => {
+                // do something
+            },
+            2 => {
+                // do something else
+            },
+            _ => unreachable!(),
+        }
+    }
+}
+```
+
 ### 二分探索
 #### lower_bound
 ```rust
