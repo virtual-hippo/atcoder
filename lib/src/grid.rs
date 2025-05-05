@@ -5,10 +5,34 @@ pub struct Pos(usize, usize);
 
 #[derive(Clone, Copy)]
 pub enum Dir {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    Up,
+    Down,
+    Left,
+    Right,
+}
+impl Dir {
+    pub fn into_char(&self) -> char {
+        match self {
+            Dir::Up => 'U',
+            Dir::Down => 'D',
+            Dir::Left => 'L',
+            Dir::Right => 'R',
+        }
+    }
+    pub fn from_char(c: char) -> Self {
+        match c {
+            'U' => Dir::Up,
+            'D' => Dir::Down,
+            'L' => Dir::Left,
+            'R' => Dir::Right,
+            _ => panic!("Invalid direction"),
+        }
+    }
+}
+impl std::fmt::Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.into_char())
+    }
 }
 
 /// 空きマスを '.', 障害物のあるマスを '#' としたグリッド
@@ -65,10 +89,10 @@ impl Grid {
         let Pos(i, j) = self.pos;
 
         match dir {
-            Dir::UP => i > 0 && self.grid[i - 1][j] == '.',
-            Dir::DOWN => i < self.h - 1 && self.grid[i + 1][j] == '.',
-            Dir::LEFT => j > 0 && self.grid[i][j - 1] == '.',
-            Dir::RIGHT => j < self.w - 1 && self.grid[i][j + 1] == '.',
+            Dir::Up => i > 0 && self.grid[i - 1][j] == '.',
+            Dir::Down => i < self.h - 1 && self.grid[i + 1][j] == '.',
+            Dir::Left => j > 0 && self.grid[i][j - 1] == '.',
+            Dir::Right => j < self.w - 1 && self.grid[i][j + 1] == '.',
         }
     }
 
@@ -79,10 +103,10 @@ impl Grid {
         }
 
         match dir {
-            Dir::UP => self.pos.0 -= 1,
-            Dir::DOWN => self.pos.0 += 1,
-            Dir::LEFT => self.pos.1 -= 1,
-            Dir::RIGHT => self.pos.1 += 1,
+            Dir::Up => self.pos.0 -= 1,
+            Dir::Down => self.pos.0 += 1,
+            Dir::Left => self.pos.1 -= 1,
+            Dir::Right => self.pos.1 += 1,
         }
 
         Ok(())
