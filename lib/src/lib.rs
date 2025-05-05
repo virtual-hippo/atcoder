@@ -4,3 +4,4 @@ pub mod grid;
 pub mod mint;
 pub mod prime_factorize;
 pub mod rolling_hash;
+pub mod trie_tree;
