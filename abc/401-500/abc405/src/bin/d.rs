@@ -1,3 +1,5 @@
+// 多始点 BFS
+
 #![allow(unused_imports)]
 use ac_library::*;
 use itertools::*;
