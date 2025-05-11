@@ -1,4 +1,5 @@
 pub mod binary_search;
+pub mod comb;
 pub mod gcd;
 pub mod grid;
 pub mod mint;
