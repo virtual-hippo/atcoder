@@ -1,0 +1,44 @@
+[package]
+name = "abc029"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.cargo-compete.bin]
+abc029-a = { alias = "a", problem = "https://atcoder.jp/contests/abc029/tasks/abc029_a" }
+abc029-b = { alias = "b", problem = "https://atcoder.jp/contests/abc029/tasks/abc029_b" }
+abc029-c = { alias = "c", problem = "https://atcoder.jp/contests/abc029/tasks/abc029_c" }
+abc029-d = { alias = "d", problem = "https://atcoder.jp/contests/abc029/tasks/abc029_d" }
+
+[[bin]]
+name = "abc029-a"
+path = "src/bin/a.rs"
+
+[[bin]]
+name = "abc029-b"
+path = "src/bin/b.rs"
+
+[[bin]]
+name = "abc029-c"
+path = "src/bin/c.rs"
+
+[[bin]]
+name = "abc029-d"
+path = "src/bin/d.rs"
+
+[dependencies]
+proconio = { version = "=0.4.5", features = ["derive"] }
+ac-library-rs = "=0.1.1"
+superslice = "1.0.0"
+itertools = "=0.11.0"
+num = "=0.4.1"
+num-bigint = "=0.4.3"
+num-complex = "=0.4.3"
+num-integer = "=0.1.45"
+num-iter = "=0.1.43"
+num-rational = "=0.4.1"
+num-traits = "=0.2.15"
+num-derive = "=0.4.0"
+rustc-hash = "=1.1.0"
+rand = "=0.8.5"
+
+[dev-dependencies]
