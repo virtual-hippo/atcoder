@@ -1,4 +1,5 @@
 use proconio::{fastout, input};
+use std::collections::BTreeMap;
 
 #[fastout]
 fn main() {
@@ -8,47 +9,41 @@ fn main() {
         x: [usize; m],
         a: [usize; m],
     }
-    let mut xa = vec![(0, 1); m + 1];
-    for i in 0..m {
-        xa[i + 1].0 = x[i];
-        xa[i + 1].1 = a[i];
-    }
-    xa.sort();
 
-    let mut stone = xa[0].1;
+    let sum_a = a.iter().sum::<usize>();
+    if sum_a != n {
+        println!("-1");
+        return;
+    }
+
+    let mut b_map = BTreeMap::new();
+    for i in 0..m {
+        b_map.insert(x[i], a[i]);
+    }
+
+    if !b_map.contains_key(&n) {
+        b_map.insert(n, 0);
+    }
+
+    let mut l = 0;
+    let mut stone = 0;
     let mut ans = 0;
 
-    for i in 0..m {
-        let d_diff = xa[i + 1].0 - xa[i].0;
-        if stone < d_diff {
+    for (&k, &v) in b_map.iter() {
+        let consume = k - l - 1;
+        if consume > stone {
             println!("-1");
             return;
         }
+        stone -= consume;
+        ans += ((consume + 1) * consume) / 2;
+        ans += stone * (consume + 1);
+        l = k;
 
-        ans += (d_diff * (2 * (stone - 1) - (d_diff - 1))) / 2;
-        stone += xa[i + 1].1;
-        stone -= d_diff;
+        if v > 0 {
+            stone += v - 1;
+        }
     }
 
-    if xa[m].0 == n {
-        if stone == 1 {
-            println!("{}", ans);
-        } else {
-            println!("-1");
-        }
-    } else {
-        let d_diff = n - xa[m].0;
-        if stone < d_diff {
-            println!("-1");
-            return;
-        }
-        ans += (d_diff * (2 * (stone - 1) - (d_diff - 1))) / 2;
-        stone -= d_diff;
-        if stone == 1 {
-            println!("{}", ans);
-            return;
-        } else {
-            println!("-1");
-        }
-    }
+    println!("{}", ans);
 }

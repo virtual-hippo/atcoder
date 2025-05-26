@@ -1,24 +1,22 @@
-use proconio::{fastout, input, marker::Chars};
+// ランレングス圧縮
+
+use itertools::*;
+use proconio::{fastout, input};
 
 #[fastout]
 fn main() {
     input! {
-        n: usize,
+        _n: usize,
         k: usize,
-        s: Chars,
+        s: String
     }
-    let mut ans = 0;
-    let mut cnt = 0;
-    for i in 0..n {
-        if s[i] == 'O' {
-            cnt += 1;
-        } else {
-            cnt = 0;
-        }
-        if cnt == k {
-            ans += 1;
-            cnt = 0;
-        }
-    }
+    let run_length = s.chars().dedup_with_count().collect_vec();
+
+    let ans = run_length
+        .iter()
+        .filter(|&&(_, ch)| ch == 'O')
+        .map(|(cnt, _)| cnt / k)
+        .sum::<usize>();
+
     println!("{}", ans);
 }

@@ -5,6 +5,6 @@ fn main() {
     input! {
         n: Chars,
     }
-    let (a, b, c) = (n[0], n[1], n[2]);
-    print!("{}{}{} {}{}{}", b, c, a, c, a, b);
+
+    println!("{}{}{} {}{}{}", n[1], n[2], n[0], n[2], n[0], n[1]);
 }

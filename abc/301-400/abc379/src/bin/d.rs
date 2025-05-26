@@ -1,45 +1,48 @@
 use proconio::{fastout, input};
-use std::collections::HashMap;
+use std::collections::VecDeque;
 
 #[fastout]
 fn main() {
     input! {
         q: usize,
     }
-
-    let mut map = HashMap::new();
-    let mut d = 0;
+    let mut que = VecDeque::new();
+    let mut tt = 0;
 
     for _ in 0..q {
         input! {
-            n: usize,
+            query: usize,
         }
-        match n {
-            1 => *map.entry(d).or_insert(0) += 1,
+        match query {
+            1 => {
+                que.push_back(tt);
+            },
             2 => {
                 input! {
                     t: usize,
                 }
-                d += t;
-            }
+                tt += t;
+            },
             3 => {
                 input! {
                     h: usize,
                 }
-                let mut p = 0;
-                let mut b = vec![];
-                for (k, v) in map.iter() {
-                    if d - *k >= h {
-                        p += *v;
-                        b.push(*k);
+                let mut ans = 0;
+                while let Some(v) = que.pop_front() {
+                    let hh = tt - v;
+                    if hh >= h {
+                        ans += 1;
+                        continue;
+                    } else {
+                        que.push_front(v);
+                        break;
                     }
                 }
-                for k in b.iter() {
-                    map.remove(k);
-                }
-                println!("{}", p);
-            }
-            _ => unreachable!(),
+                println!("{}", ans);
+            },
+            _ => {
+                println!("Unknown query type: {}", query);
+            },
         }
     }
 }

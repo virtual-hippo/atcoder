@@ -1,30 +1,31 @@
+use itertools::*;
 use proconio::{fastout, input, marker::Chars};
 
 #[fastout]
 fn main() {
     input! {
         n: usize,
-        s: Chars,
+        s: Chars
     }
-    let mut d = vec![0; n];
+    let a = s.iter().map(|&c| c as u64 - b'0' as u64).collect::<Vec<_>>();
+    let b = a.iter().enumerate().map(|(i, &x)| (i + 1) as u64 * x).collect_vec();
+    let s = std::iter::once(0_u64)
+        .chain(b.iter().scan(0_u64, |sum, &x| {
+            *sum = *sum + x;
+            Some(*sum)
+        }))
+        .collect::<Vec<_>>();
 
+    let mut ch = vec![];
+    let mut now = 0_u64;
     for i in 0..n {
-        let num = s[i].to_digit(10).unwrap() as u64;
-        if i == 0 {
-            d[i] = num;
-        } else {
-            d[i] = d[i - 1] + (i as u64 + 1) * num;
-        }
-    }
-    let mut d: Vec<u64> = d.into_iter().rev().collect();
-
-    for i in 0..n - 1 {
-        let carry = d[i] / 10;
-        d[i] = d[i] % 10;
-        d[i + 1] += carry;
+        let v = s[n - i] - s[0] + now;
+        now = v / 10;
+        let m = v % 10;
+        ch.push((m as u8 + b'0') as char);
     }
 
-    for i in (0..n).rev() {
-        print!("{}", d[i]);
-    }
+    let rev_ch = ch.into_iter().rev().collect::<String>();
+    let ans = if now == 0 { rev_ch } else { format!("{}{}", now, rev_ch) };
+    println!("{}", ans);
 }
