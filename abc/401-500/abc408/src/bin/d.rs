@@ -34,3 +34,30 @@ fn solve() {
     let ans = res + cnt_1;
     println!("{}", ans);
 }
+
+fn solve2() {
+    input! {
+        n: usize,
+        s: Chars,
+    }
+
+    let mut dp = vec![[usize::MAX; 3]; n + 1];
+    // 0: 1 区間に入る前
+    // 1: 1 区間の中
+    // 2: 1 区間を出た
+    dp[0][0] = 0;
+    dp[0][1] = 0;
+    dp[0][2] = 0;
+
+    for i in 1..n + 1 {
+        let ns = s[i - 1];
+        dp[i][0] = dp[i - 1][0] + if ns == '0' { 0 } else { 1 };
+
+        dp[i][1] = dp[i][1].min(dp[i - 1][0] + if ns == '0' { 1 } else { 0 });
+        dp[i][1] = dp[i][1].min(dp[i - 1][1] + if ns == '0' { 1 } else { 0 });
+
+        dp[i][2] = dp[i][2].min(dp[i - 1][1] + if ns == '0' { 0 } else { 1 });
+        dp[i][2] = dp[i][2].min(dp[i - 1][2] + if ns == '0' { 0 } else { 1 });
+    }
+    println!("{}", dp[n].iter().min().unwrap());
+}
