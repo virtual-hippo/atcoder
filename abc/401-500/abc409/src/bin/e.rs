@@ -1,3 +1,4 @@
+// 根付木
 use proconio::{fastout, input};
 
 #[fastout]
