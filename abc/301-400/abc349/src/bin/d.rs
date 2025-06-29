@@ -6,18 +6,28 @@ fn main() {
         l: u64,
         r: u64,
     }
+    let mut ans: Vec<(u64, u64)> = vec![];
+
     let mut ll = l;
-    let mut ans = vec![];
     while ll < r {
-        let mut i = 0;
-        while ll % 2_u64.pow(i + 1) == 0 && 2_u64.pow(i + 1) + ll <= r {
-            i += 1;
+        let mut rr = 0;
+        for i in 0..62 {
+            let ii = 1 << i;
+            if ll % ii != 0 {
+                continue;
+            }
+            let nr = (ll / ii + 1) * ii;
+            if nr > r {
+                break;
+            }
+            rr = nr;
         }
-        ans.push((ll, ll + 2_u64.pow(i)));
-        ll += 2_u64.pow(i);
+        ans.push((ll, rr));
+        ll = rr;
     }
+
     println!("{}", ans.len());
-    for pair in ans.iter() {
-        println!("{} {}", pair.0, pair.1);
+    for v in ans.iter() {
+        println!("{} {}", v.0, v.1);
     }
 }
