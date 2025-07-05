@@ -7,11 +7,47 @@ fn main() {
     }
 
     for _ in 0..t {
-        solve();
+        _solve2();
     }
 }
 
-fn solve() {
+//
+// swap で解く (解説放送)
+// https://www.youtube.com/live/NRb4TT78L8c
+//
+fn _solve2() {
+    input! {
+        n: usize,
+        p: [u64; 1 << n],
+    }
+
+    let mut p = p;
+
+    let mut w = 1;
+    while w < (1 << n) {
+        let mut l = 0;
+        while l < (1 << n) {
+            if p[l] > p[l + w] {
+                for i in 0..w {
+                    p.swap(l + i, l + w + i);
+                }
+            }
+            l += w * 2;
+        }
+        w <<= 1;
+    }
+
+    for (i, v) in p.iter().enumerate() {
+        if i == 0 {
+            print!("{}", v);
+        } else {
+            print!(" {}", v);
+        }
+    }
+    println!();
+}
+
+fn _solve() {
     input! {
         n: usize,
         p: [u64; 1 << n],
