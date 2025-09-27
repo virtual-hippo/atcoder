@@ -1,6 +1,7 @@
-# Rustで競プロする際のメモ
+# Rust で競プロする際のメモ
 
 ## 良く使うライブラリ
+
 ```rust
 use proconio::input;
 use std::collections::HashSet;
@@ -13,7 +14,9 @@ use regex::Regex; // ←あまり使わん
 ```
 
 ## usize
+
 ### saturating_sub: ゼロにクリップして減算する
+
 ```rust
     let a: usize = 5;
     let b: usize = 10;
@@ -21,17 +24,22 @@ use regex::Regex; // ←あまり使わん
     let result = a.saturating_sub(b);
     println!("Result: {}", result); // 0
 ```
+
 saturating_sub
 
 ## cast 系
+
 ### char to num
+
 ```rust
 let c: char = '5';
 let num: i32 = c as i32 - 48;
 ```
 
 ## 文字列操作系
+
 ### 大文字変換
+
 ```rust
 let mut s = String::from("Grüße, Jürgen ❤");
 s.make_ascii_uppercase();
@@ -39,15 +47,17 @@ assert_eq!("GRüßE, JüRGEN ❤", s);
 ```
 
 ### 小数点
+
 ```rust
  // 少数第7まで表示
 println!("{:.7}", n);
 ```
 
-### N進数
+### N 進数
+
 ```rust
 // 16進数0埋め, 文字列長2
-println!("{:>02X}", n); 
+println!("{:>02X}", n);
 
 // 8進数にしたときに7が含まれるか
 for i in 1..n+1 {
@@ -62,24 +72,28 @@ for i in 1..n+1 {
 ```
 
 ### str to num
+
 ```rust
 let str_num = "111";
 
 // 2進数
 println!("{}", u64::from_str_radix(str_num, 2).unwrap());
 ```
+
 ```rust
 let stri: String = String::from("5");
 let num: i32 = stri.parse().unwrap();
 ```
 
 ### num to string
+
 ```rust
 let num: i32 = 5;
 let stri: String = num.to_string();
 ```
 
 ### アルファベットを順に出力
+
 ```rust
 // https://www.k-cube.co.jp/wakaba/server/ascii_code.html
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -92,6 +106,7 @@ let small_a = 97_u8;
 ```
 
 ### 回文チェック
+
 ```rust
 fn is_kaibun(s: &Vec<char>) -> bool{
     let s_len = s.len();
@@ -104,7 +119,6 @@ fn is_kaibun(s: &Vec<char>) -> bool{
 }
 ```
 
-
 ```rust
 let text = "there".to_string();
 let rh = RollingHash::new(text.as_bytes());
@@ -112,6 +126,7 @@ assert_eq!(rh.is_palindrome(0, text.len()), false);
 ```
 
 ### 大文字と小文字
+
 ```rust
 let large_chars = vec!['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 let small_chars = vec!['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
@@ -137,14 +152,18 @@ fn flip(c: &char) -> char {
 ```
 
 ## HashMap
+
 ### entry API
+
 ```rust
  *map.entry(a[i]).or_insert(0) += 1;
  map.entry(s[j]).or_insert_with(|| vec![]).push(j);
 ```
 
 ## Vec
+
 ### sort
+
 ```rust
 // 昇順
 vec.sort();
@@ -158,6 +177,7 @@ vec_with_ind.sort_by(|a, b| a.1.cmp(&b.1));
 ```
 
 ### min, max
+
 ```rust
 let min = v.iter().min().unwrap();
 let max = v.iter().max().unwrap();
@@ -168,6 +188,7 @@ let max = x_vec.iter().fold(dummy_min, |max, x| std::cmp::max(max, *x));
 ```
 
 ### sum
+
 ```rust
 let sum = v.iter().sum::<usize>();
 
@@ -176,13 +197,16 @@ let sum = v.iter().fold(0, |sum, x| sum + *x);
 ```
 
 ### 一部を新しく作る
+
 ```rust
-let s = vec!['a', 'b', 'c', 'd', 'e']; 
+let s = vec!['a', 'b', 'c', 'd', 'e'];
 let new_s = s[0..(s.len()-1)/2].iter().map(|&ch| ch).collect();
 ```
 
 ## DP
-### 部分和DP
+
+### 部分和 DP
+
 ```rust
 // a: Vec<usize>
 // s: aの合計
@@ -203,21 +227,25 @@ for i in 1..n+1 {
 ```
 
 ## 座標系
-### 距離の2乗計算(2次元)
+
+### 距離の 2 乗計算(2 次元)
+
 ```rust
 fn calc_d(pos1: (i64, i64), pos2: (i64, i64)) -> i64 {
-    (pos2.0 - pos1.0).pow(2) + (pos2.1 - pos1.1).pow(2) 
+    (pos2.0 - pos1.0).pow(2) + (pos2.1 - pos1.1).pow(2)
 }
 ```
 
-### 距離の2乗計算(N次元)
+### 距離の 2 乗計算(N 次元)
+
 ```rust
 fn calc_d(pos1: &Vec<i64>, pos2: &Vec<i64>) -> i64 {
     (0..pos1.len()).fold(0, |sum, x| sum + (pos2[x]-pos1[x]).pow(2))
 }
 ```
 
-### 3点が同じ直線上に存在するか
+### 3 点が同じ直線上に存在するか
+
 ```rust
 fn is_triangle(p1: (i64, i64), p2: (i64, i64), p3: (i64, i64)) -> bool {
     let v1 = (p2.0 - p1.0, p2.1 - p1.1);
@@ -227,7 +255,9 @@ fn is_triangle(p1: (i64, i64), p2: (i64, i64), p3: (i64, i64)) -> bool {
 ```
 
 ## 探索系
+
 ### ベル数
+
 ```rust
 /// [ABC390 D - Stone XOR](https://atcoder.jp/contests/abc390/tasks/abc390_d)
 
@@ -253,7 +283,8 @@ fn dfs(a: &Vec<usize>, i: usize, groups: &mut Vec<Vec<usize>>) {
 }
 ```
 
-### bit全探索
+### bit 全探索
+
 ```rust
 for bit in 0..(1<<n) {
     for i in 0..n {
@@ -267,6 +298,7 @@ for bit in 0..(1<<n) {
 ```
 
 ### N 進法についての全探索
+
 ```rust
 // 3進法を例にする
 
@@ -300,7 +332,9 @@ for s in 0..p3[n] {
 ```
 
 ### 二分探索
+
 #### lower_bound
+
 ```rust
 // https://docs.rs/superslice/latest/superslice/trait.Ext.html#tymethod.lower_bound
 use superslice::Ext;
@@ -318,6 +352,7 @@ assert_eq!(a.lower_bound(&16), 5);
 ```
 
 #### upper_bound
+
 ```rust
 // https://docs.rs/superslice/latest/superslice/trait.Ext.html#tymethod.upper_bound
 use superslice::Ext;
@@ -332,9 +367,8 @@ assert_eq!(a.upper_bound(&15), 5);
 assert_eq!(a.upper_bound(&16), 5);
 ```
 
-
-
 ### BTreeSet で lower bound 的なことをやりたいときに使うやつ
+
 ```rs
 // https://stackoverflow.com/questions/48575866/how-to-get-the-lower-bound-and-upper-bound-of-an-element-in-a-btreeset
 use std::collections::BTreeSet;
@@ -349,7 +383,9 @@ fn neighbors(tree: &BTreeSet<usize>, val: usize) -> (Option<&usize>, Option<&usi
 ```
 
 ## 数学
+
 ### 最大公約数
+
 ```rust
 use num_integer::gcd;
 ```
@@ -373,6 +409,7 @@ fn gcd(x: usize, y: usize) -> usize {
 ```
 
 ### 最小公倍数
+
 ```rust
 fn lcm(x: usize, y: usize) -> usize {
     let d = gcd(x,y);
@@ -381,6 +418,7 @@ fn lcm(x: usize, y: usize) -> usize {
 ```
 
 ### 期待値を mod 998244353 で出力
+
 ```rust
     // https://strangerxxx.hateblo.jp/entry/20230419/1681873929
     // 期待値 = p / q
@@ -389,25 +427,42 @@ fn lcm(x: usize, y: usize) -> usize {
 
 ```
 
-### モジュラ逆数
-```rust
-// モジュラ逆数を求める
-fn modular_inv(a: usize, m: usize) -> usize {
-    power(a, m - 2, m)
-}
+### 桁数を返す
 
-// aのb乗をmで割った余りを返す関数
-fn power(a: usize, b: usize, m: usize) -> usize {
-    let mut p = a;
-    let mut ret = 1;
-    for i in 0..30 {
-        let wari = 1 << i;
-        if (b / wari) % 2 == 1 {
-            ret = (ret * p) % m;
-        }
-        p = (p * p) % m;
+```rust
+/// 桁数を返す関数
+fn count_digits(n: u64) -> u32 {
+    if n < 10 {
+        return 1;
     }
-    ret
+    1 + count_digits(n / 10)
+}
+```
+
+### モジュラ逆数
+
+```rust
+pub mod modular_multiplicative_inverse {
+    /// a の 逆元を m で割った余りを返す関数
+    pub fn modular_inv(a: u64, m: u64) -> u64 {
+        power(a, m - 2, m)
+    }
+
+    /// a の b 乗を m で割った余りを返す関数
+    /// 繰り返し二乗法を用いて高速に計算する
+    pub fn power(a: u64, b: u64, m: u64) -> u64 {
+        if b == 0 {
+            return 1;
+        }
+
+        if b % 2 == 0 {
+            let v = power(a, b / 2, m) % m;
+            v * v % m
+        } else {
+            let v = power(a, b / 2, m) % m;
+            v * v % m * a % m
+        }
+    }
 }
 ```
 
@@ -429,24 +484,33 @@ for i in 1..=M {
 ## グリッド問題の盆栽
 
 ```rust
+#[derive(Clone, Copy)]
 enum Dir {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 fn can_move(s: &Vec<Vec<char>>, (i, j): (usize, usize), dir: Dir) -> bool {
     match dir {
-        Dir::UP => i > 0 && s[i - 1][j] == '.',
-        Dir::DOWN => i < s.len() - 1 && s[i + 1][j] == '.',
-        Dir::LEFT => j > 0 && s[i][j - 1] == '.',
-        Dir::RIGHT => j < s[0].len() - 1 && s[i][j + 1] == '.',
+        Dir::Up => i > 0 && s[i - 1][j] != '#',
+        Dir::Down => i < s.len() - 1 && s[i + 1][j] != '#',
+        Dir::Left => j > 0 && s[i][j - 1] != '#',
+        Dir::Right => j < s[0].len() - 1 && s[i][j + 1] != '#',
+    }
+}
+
+fn move_pos((i, j): (usize, usize), dir: Dir) -> (usize, usize) {
+    match dir {
+        Dir::Up => (i - 1, j),
+        Dir::Down => (i + 1, j),
+        Dir::Left => (i, j - 1),
+        Dir::Right => (i, j + 1),
     }
 }
 
 ```
-
 
 ## bit 操作
 
@@ -464,7 +528,8 @@ let k = 3;
 assert_eq!((num >> k) & 1, 1);
 ```
 
-### k 桁目のビットを1にする
+### k 桁目のビットを 1 にする
+
 ```rust
 let mut num = 0b101101; // 例: 2進数 101101 (10進数で 45)
 
@@ -477,7 +542,8 @@ num |= 1 << k;
 assert_eq!(num, 0b101111);
 ```
 
-### k 桁目のビットを0にする
+### k 桁目のビットを 0 にする
+
 ```rust
 let mut num = 0b101101; // 例: 2進数 101101 (10進数で 45)
 
@@ -491,6 +557,7 @@ assert_eq!(num, 0b101000);
 ```
 
 ## グラフ
+
 ### 木の重心
 
 ```rust
@@ -533,7 +600,9 @@ fn dfs(
 ```
 
 ## うまく分類できないの
+
 ### 区間スケジュール問題
+
 ```rust
 // https://atcoder.jp/contests/abc131/tasks/abc131_d
 input! {
@@ -553,6 +622,7 @@ println!("Yes");
 ```
 
 ### インタラクティブな問題のおなじない
+
 ```rust
 use proconio::input;
 use proconio::source::line::LineSource;
