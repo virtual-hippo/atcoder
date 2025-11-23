@@ -27,7 +27,7 @@ use ac_library::*;
 use itertools::*;
 use proconio::{fastout, input, marker::Chars};
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, VecDeque};
 use superslice::Ext;
 
 #[fastout]
@@ -44,7 +44,7 @@ fn main() {
 
 [template.new]
 # `edition` for `Cargo.toml`.
-edition = "2018"
+edition = "2021"
 # `profile` for `Cargo.toml`.
 #
 # By setting this, you can run tests with `opt-level=3` while enabling `debug-assertions` and `overflow-checks`.
@@ -52,14 +52,25 @@ edition = "2018"
 #[dev]
 #opt-level = 3
 #'''
+
+#https://img.atcoder.jp/file/language-update/2025-10/language-list.html
 dependencies = '''
-proconio = { version = "=0.4.5", features = ["derive"] }
-ac-library-rs = "=0.1.1"
+ac-library-rs = "=0.2.0"
+itertools = "=0.14.0"
+num = "=0.4.3"
+num-bigint = "=0.4.6"
+num-complex = "=0.4.6"
+num-derive = "=0.4.2"
+num-integer = "=0.1.46"
+num-iter = "=0.1.45"
+num-rational = "=0.4.2"
+num-traits = "=0.2.19"
+proconio = { version = "=0.5.0", features = ["derive"] }
+rand = "=0.9.2"
+rustc-hash = "=2.1.1"
 superslice = "1.0.0"
-itertools = "=0.11.0"
-rustc-hash = "=1.1.0"
-rand = "=0.8.5"
 '''
+
 dev-dependencies = '''
 #atcoder-202004-lock = { git = "https://github.com/qryxip/atcoder-202004-lock" }
 '''
@@ -107,8 +118,7 @@ path = "./{{ contest }}"
 
 [test]
 # Toolchain for the test. (optional)
-#toolchain = "1.42.0"
-toolchain = "1.70.0"
+toolchain = "1.89.0"
 # Profile for `cargo build`. ("dev" | "release")
 #
 # Defaults to `"dev"`.
@@ -116,10 +126,8 @@ toolchain = "1.70.0"
 
 [submit]
 kind = "file"
+language_id = "6088"
 path = "{{ src_path }}"
-#language_id = "4050"
-language_id = "5054"
 #[submit]
 #kind = "command"
 #args = ["cargo", "equip", "--exclude-atcoder-crates", "--resolve-cfgs", "--remove", "docs", "--minify", "libs", "--rustfmt", "--check", "--bin", "{{ bin_name }}"]
-#language_id = "4050"
