@@ -1,4 +1,3 @@
-
 use std::collections::BTreeMap;
 use std::ops::Bound;
 pub struct RangeMap {
@@ -14,14 +13,14 @@ impl RangeMap {
         }
     }
 
-    /// 点 x を含む区間 [start, end) があれば Some((start, end)) を返す
+    /// 点 x を含む区間 [p_left, p_right) があれば Some((p_left, p_right)) を返す
     #[inline]
     fn find_containing(&self, x: i64) -> Option<(i64, i64)> {
         self.range_map
             .range((Bound::Unbounded, Bound::Included(x)))
             .next_back()
-            .filter(|&(&_start, &end)| x < end)
-            .map(|(&start, &end)| (start, end))
+            .filter(|&(&_p_left, &p_right)| x < p_right)
+            .map(|(&p_left, &p_right)| (p_left, p_right))
     }
 
     /// 点 x がいずれかの区間に含まれているか
@@ -30,53 +29,57 @@ impl RangeMap {
     }
 
     /// 区間 [left, right) を追加し、重なる区間をマージする
-    /// 戻り値: マージ後の区間 (merged_start, merged_end)
+    /// 戻り値: マージ後の区間 (merged_left, merged_right)
     pub fn insert(&mut self, left: i64, right: i64) -> (i64, i64) {
         if left >= right {
             return (left, left);
         }
 
         // 1. マージ対象の区間を収集し、マージ後の範囲を計算
-        let (merged_start, merged_end, ranges_to_remove) = self.collect_overlapping_ranges(left, right);
+        let (merged_left, merged_right, ranges_to_remove) = self.collect_overlapping_ranges(left, right);
 
         // 2. 重なる区間を削除
-        for start in ranges_to_remove {
-            let end = self.range_map.remove(&start).unwrap();
-            self.total_length -= end - start;
+        for p_left in ranges_to_remove {
+            let p_right = self.range_map.remove(&p_left).unwrap();
+            self.total_length -= p_right - p_left;
         }
 
         // 3. マージした区間を挿入
-        self.range_map.insert(merged_start, merged_end);
-        self.total_length += merged_end - merged_start;
+        self.range_map.insert(merged_left, merged_right);
+        self.total_length += merged_right - merged_left;
 
-        (merged_start, merged_end)
+        (merged_left, merged_right)
     }
 
     /// [left, right) と重なる or 隣接する区間を収集し、マージ後の範囲を返す
     fn collect_overlapping_ranges(&self, left: i64, right: i64) -> (i64, i64, Vec<i64>) {
-        let mut merged_start = left;
-        let mut merged_end = right;
+        let mut merged_left = left;
+        let mut merged_right = right;
         let mut ranges_to_remove = Vec::new();
 
+        if left >= right {
+            return (merged_left, merged_right, ranges_to_remove);
+        }
+
         // left 以下の左端を持つ区間で、left と重なる or 隣接するものを探す
-        if let Some((&start, &end)) = self
+        if let Some((&p_left, &p_right)) = self
             .range_map
             .range((Bound::Unbounded, Bound::Included(left)))
             .next_back()
-            .filter(|&(_, &end)| end >= left)
+            .filter(|&(_, &p_right)| left <= p_right)
         {
-            merged_start = merged_start.min(start);
-            merged_end = merged_end.max(end);
-            ranges_to_remove.push(start);
+            merged_left = merged_left.min(p_left);
+            merged_right = merged_right.max(p_right);
+            ranges_to_remove.push(p_left);
         }
 
         // left より大きい左端を持つ区間で、right と重なる or 隣接するものを収集
-        for (&start, &end) in self.range_map.range((Bound::Excluded(left), Bound::Included(right))) {
-            merged_end = merged_end.max(end);
-            ranges_to_remove.push(start);
+        for (&p_left, &p_right) in self.range_map.range((Bound::Excluded(left), Bound::Included(right))) {
+            merged_right = merged_right.max(p_right);
+            ranges_to_remove.push(p_left);
         }
 
-        (merged_start, merged_end, ranges_to_remove)
+        (merged_left, merged_right, ranges_to_remove)
     }
 
     /// 区間 [left, right) を削除する（部分的に重なる場合は分割）
@@ -88,15 +91,15 @@ impl RangeMap {
         let (ranges_to_remove, fragments_to_add) = self.collect_removal_targets(left, right);
 
         // 削除
-        for start in ranges_to_remove {
-            let end = self.range_map.remove(&start).unwrap();
-            self.total_length -= end - start;
+        for p_left in ranges_to_remove {
+            let p_right = self.range_map.remove(&p_left).unwrap();
+            self.total_length -= p_right - p_left;
         }
 
         // 分割後の残りを追加
-        for (start, end) in fragments_to_add {
-            self.range_map.insert(start, end);
-            self.total_length += end - start;
+        for (p_left, p_right) in fragments_to_add {
+            self.range_map.insert(p_left, p_right);
+            self.total_length += p_right - p_left;
         }
     }
 
@@ -105,24 +108,38 @@ impl RangeMap {
         let mut ranges_to_remove = Vec::new();
         let mut fragments_to_add = Vec::new();
 
-        // left を含む可能性のある区間（左端が left 以下で最大）
-        if let Some((&start, &end)) = self.range_map.range(..=left).next_back().filter(|&(_, &end)| end > left) {
-            ranges_to_remove.push(start);
+        if left >= right {
+            return (ranges_to_remove, fragments_to_add);
+        }
 
-            if start < left {
-                fragments_to_add.push((start, left)); // [start, left) を残す
+        // left を含む可能性のある区間（左端が left 以下で最大）
+        if let Some((&p_left, &p_right)) = self
+            .range_map
+            .range((Bound::Unbounded, Bound::Included(left)))
+            .next_back()
+            .filter(|&(_, &p_right)| left < p_right)
+        {
+            // p_left <= left < p_right
+            ranges_to_remove.push(p_left);
+
+            // p_left < left < p_right
+            if p_left < left {
+                fragments_to_add.push((p_left, left)); // [p_left, left) を残す
             }
-            if end > right {
-                fragments_to_add.push((right, end)); // [right, end) を残す
+            // p_left <= left < right  < p_right
+            if right < p_right {
+                fragments_to_add.push((right, p_right)); // [right, p_right) を残す
             }
         }
 
         // 左端が (left, right) にある区間を収集
-        for (&start, &end) in self.range_map.range((Bound::Excluded(left), Bound::Excluded(right))) {
-            ranges_to_remove.push(start);
+        for (&p_left, &p_right) in self.range_map.range((Bound::Excluded(left), Bound::Excluded(right))) {
+            // left < p_left < right
+            ranges_to_remove.push(p_left);
 
-            if end > right {
-                fragments_to_add.push((right, end)); // [right, end) を残す
+            // left < p_left < right < p_right
+            if right < p_right {
+                fragments_to_add.push((right, p_right)); // [right, p_right) を残す
             }
         }
 
@@ -130,7 +147,7 @@ impl RangeMap {
     }
 
     /// 管理している区間の個数
-    pub fn interval_count(&self) -> usize {
+    pub fn range_count(&self) -> usize {
         self.range_map.len()
     }
 
@@ -142,17 +159,17 @@ impl RangeMap {
     /// x 以上で self に含まれていない最小値を返す (mex)
     /// 計算量: O(log N)
     pub fn min_excluded_from(&self, x: i64) -> i64 {
-        self.find_containing(x).map(|(_, end)| end).unwrap_or(x)
+        self.find_containing(x).map(|(_, p_right)| p_right).unwrap_or(x)
     }
 
     /// x 以下で self に含まれていない最大値を返す
     /// 計算量: O(log N)
     pub fn max_excluded_to(&self, x: i64) -> i64 {
-        self.find_containing(x).map(|(start, _)| start - 1).unwrap_or(x)
+        self.find_containing(x).map(|(p_left, _)| p_left - 1).unwrap_or(x)
     }
 
     /// 全区間のイテレータ
     pub fn iter(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
-        self.range_map.iter().map(|(&start, &end)| (start, end))
+        self.range_map.iter().map(|(&p_left, &p_right)| (p_left, p_right))
     }
 }
