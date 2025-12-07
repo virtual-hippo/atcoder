@@ -3,7 +3,7 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-fn dijkstra(graph: &Vec<Vec<(usize, i64)>>, n: usize) -> Vec<i64> {
+pub fn dijkstra(graph: &Vec<Vec<(usize, i64)>>, n: usize) -> Vec<i64> {
     let mut heap = BinaryHeap::new();
     let mut kakutei = vec![false; n];
     let mut costs = vec![i64::MAX; n];

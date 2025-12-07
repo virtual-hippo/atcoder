@@ -1,9 +1,17 @@
+pub mod bfs;
 pub mod binary_search;
 pub mod comb;
+pub mod dfs;
+pub mod dijkstra;
 pub mod gcd;
 pub mod grid;
 pub mod mint;
+pub mod prime;
 pub mod prime_factorize;
+pub mod range_map;
+pub mod recursive;
 pub mod rolling_hash;
+pub mod sieve_of_eratosthenes;
 pub mod sum_floor;
 pub mod trie_tree;
+pub mod union_find;

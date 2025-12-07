@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-fn bfs(graph: &Vec<Vec<usize>>, start: usize) -> Vec<i64> {
+pub fn bfs(graph: &Vec<Vec<usize>>, start: usize) -> Vec<i64> {
     let mut dist = vec![-1_i64; graph.len()];
     let mut queue = VecDeque::new();
     queue.push_back(start);

@@ -1,4 +1,4 @@
-struct UnionFind {
+pub struct UnionFind {
     /// 親頂点の番号
     par: Vec<usize>,
     /// 連結成分の頂点の個数
@@ -8,15 +8,15 @@ struct UnionFind {
 }
 
 impl UnionFind {
-    fn new(n: usize) -> Self {
+    pub fn new(n: usize) -> Self {
         UnionFind {
-            par: vec![0; n+1],
-            siz: vec![1; n+1],
-            sid: vec![0; n+1],
+            par: vec![0; n + 1],
+            siz: vec![1; n + 1],
+            sid: vec![0; n + 1],
         }
     }
 
-    fn root(&self, x: usize) -> usize {
+    pub fn root(&self, x: usize) -> usize {
         let mut current = x;
         loop {
             if self.par[current] == 0 {
@@ -27,7 +27,7 @@ impl UnionFind {
         current
     }
 
-    fn unite(&mut self, u: usize, v: usize) {
+    pub fn unite(&mut self, u: usize, v: usize) {
         let root_u = self.root(u);
         let root_v = self.root(v);
         if root_u == root_v {
