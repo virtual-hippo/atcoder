@@ -1,147 +1,70 @@
-use proconio::input;
-use proconio::marker::Chars;
+use proconio::{fastout, input, marker::Chars};
+use std::collections::HashSet;
 
-struct Sheet {
-    h: usize,
-    w: usize,
-    sheet: Vec<Vec<char>>
+fn get_sheet() -> Vec<Vec<char>> {
+    input! {
+        h: usize,
+        _w: usize,
+        s: [Chars; h],
+    }
+    s
 }
 
-impl Sheet {
-    fn new(h: usize, w: usize, sheet: Vec<Vec<char>>) -> Self {
-        Sheet {
-            h, w, sheet
-        }
-    }
-
-    fn new_by_input() -> Self {
-        input! {
-            (h,w): (usize, usize),
-            sheet: [Chars; h],
-        }
-        Sheet {
-            h, w, sheet
-        }
-    }
-
-    fn same(&self, other: &Self, pos: (usize, usize)) -> bool {
-        for i in 0..other.h {
-            for j in 0..other.w {
-                if self.sheet[pos.0+i][pos.1+j] != other.sheet[i][j] {
-                    return false;
-                }
-            }
-        }
-        true
-    }
-
-    
-
-    fn contain_black(&self, other: &Self, pos: (usize, usize), banpei: (usize, usize)) -> bool {
-        for i in 0..other.h {
-            for j in 0..other.w {
-                if other.sheet[i][j] == '#' {
-                    if self.sheet[pos.0+i][pos.1+j] == '.' {
-                        return false;
-                    }
-                    if banpei.0 <= pos.0+i || banpei.1 <= pos.1+j {
-                        return false;
-                    }
-                }
-            }
-        }
-        true
-    }
-
-    fn _print(&self) {
-        for i in 0..self.h {
-            for j in 0..self.w {
-                print!("{}", self.sheet[i][j]);
-            }
-            println!("");
-        }
-    }
+fn get_positions(sheet: &[Vec<char>]) -> Vec<(i32, i32)> {
+    sheet
+        .iter()
+        .enumerate()
+        .flat_map(|(i, row)| {
+            row.iter()
+                .enumerate()
+                .filter(|(_, c)| **c == '#')
+                .map(move |(j, _)| (i as i32, j as i32))
+        })
+        .collect()
 }
 
-
-fn stack(base: &mut Sheet, other: &Sheet, pos: (usize, usize)) {
-    if pos.0 + other.h > base.h || pos.1 + other.w > base.w {
-        println!("muri");
-        return;
-    }
-
-    for i in 0..other.h {
-        for j in 0..other.w {
-            if other.sheet[i][j] == '#' {
-                base.sheet[pos.0+i][pos.1+j] = '#';
-            }
-        }
-    }
+fn shift_positions(pos: &[(i32, i32)], dr: i32, dc: i32) -> HashSet<(i32, i32)> {
+    pos.iter().map(|&(r, c)| (r + dr, c + dc)).collect()
 }
 
-fn check(current: &Sheet, a: &Sheet, b: &Sheet, x: &Sheet) -> bool {
-    
-    for i in 0..current.h + 1 - x.h {
-        for j in 0..current.w + 1 - x.w {
-            if current.same(x, (i,j)) {
-                let a_ok = {
-                    let mut ret_a = false;
-                    for k in i..i+a.h {
-                        for l in j..j+a.w {
-                            if current.contain_black(a, (k,l), (i+x.h, j+x.w)) {
-                                ret_a = true;
-                            }
-                        }
-                    }
-                    ret_a
-                };
-                let b_ok = {
-                    let mut ret_b = false;
-                    for k in i..i+b.h {
-                        for l in j..j+b.w {
-                            if current.contain_black(b, (k,l), (i+x.h, j+x.w)) {
-                                ret_b = true;
-                            }
-                        }
-                    }
-                    ret_b
-                };
-                return a_ok && b_ok;
-            }
-        }
-    }
-    false
-}
-
-fn get_base(b: &Sheet) -> Sheet {
-    let mut ret = Sheet::new(30, 30, vec![vec!['.'; 30]; 30]);
-    for i in 10..10+b.h {
-        for j in 10..10+b.w {
-            if b.sheet[i-10][j-10] == '#' {
-                ret.sheet[i][j] = '#';
-            }
-        }
-    }
-    ret
-}
-
+#[fastout]
 fn main() {
-    let a = Sheet::new_by_input();
-    let b = Sheet::new_by_input();
-    let x = Sheet::new_by_input();
+    let a = get_sheet();
+    let b = get_sheet();
+    let x = get_sheet();
 
-    for i in 0..30-a.h {
-        for j in 0..30-a.w {
-            let mut base = get_base(&b);
-            stack(&mut base, &a, (i,j));
-            
-            if check(&base, &a, &b, &x) {
+    let pos_a = get_positions(&a);
+    let pos_b = get_positions(&b);
+    let pos_x = get_positions(&x);
+    let set_x: HashSet<_> = pos_x.iter().cloned().collect();
+
+    // Aの最初の'#'をXの各'#'に配置
+    for &(xr, xc) in &pos_x {
+        let (ar, ac) = pos_a[0];
+        let set_a = shift_positions(&pos_a, xr - ar, xc - ac);
+
+        // Aの全'#'がXの'#'上にあるか確認
+        if !set_a.is_subset(&set_x) {
+            continue;
+        }
+
+        // Bの最初の'#'をXの各'#'に配置
+        for &(yr, yc) in &pos_x {
+            let (br, bc) = pos_b[0];
+            let set_b = shift_positions(&pos_b, yr - br, yc - bc);
+
+            // Bの全'#'がXの'#'上にあるか確認
+            if !set_b.is_subset(&set_x) {
+                continue;
+            }
+
+            // A ∪ B = X か確認
+            if set_a.union(&set_b).count() == set_x.len() {
                 println!("Yes");
                 return;
             }
         }
     }
-    
+
     println!("No");
 }
-
