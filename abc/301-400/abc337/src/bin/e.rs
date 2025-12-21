@@ -1,6 +1,5 @@
-use proconio::input;
-use proconio::marker::Chars;
-use proconio::source::line::LineSource;
+use itertools::*;
+use proconio::{input, marker::Chars, source::line::LineSource};
 use std::io::{self, BufReader};
 
 fn main() {
@@ -10,26 +9,24 @@ fn main() {
     input! {
         n: usize,
     }
-    let m = n - 1;
+
+    let m = (0_usize..).find(|&x| (1 << x) >= n).unwrap();
     println!("{}", m);
-    for i in 0..m {
-        println!("2 {} {}", i + 1, i + 2);
+
+    for bit in 0..m {
+        let a = (0..n).filter(|&i| (i >> bit) & 1 == 1).map(|i| i + 1).collect_vec();
+        print!("{} ", a.len());
+        print_vec_1line(&a);
     }
     input! {
         s: Chars,
     }
-    if s[0] == '1' && s[1] == '0' {
-        println!("1");
-        return;
-    }
-    if s[m - 2] == '0' && s[m - 1] == '1' {
-        println!("{}", m);
-        return;
-    }
-    for i in 1..m {
-        if s[i] == '1' && s[i - 1] == '1' {
-            println!("{}", i + 1);
-            return;
-        }
-    }
+
+    let ans = (0..m).filter(|&i| s[i] == '1').fold(0, |acc, i| acc | 1 << i);
+    println!("{}", ans + 1);
+}
+
+pub fn print_vec_1line<T: std::fmt::Display>(arr: &[T]) {
+    let msg = arr.iter().map(|x| format!("{}", x)).join(" ");
+    println!("{}", msg);
 }
