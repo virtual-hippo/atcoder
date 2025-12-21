@@ -5,22 +5,20 @@ use proconio::{fastout, input};
 fn main() {
     input! {
         n: usize,
-        a: [u64; n],
+        a: [usize; n],
     }
-    let a = a.into_iter().sorted().collect_vec();
-    let s = a.iter().sum::<u64>();
-    let avg = s / n as u64;
-    let m = s % n as u64;
 
-    let goal = {
-        let mut goal = vec![avg; n];
-        for i in 0..m {
-            let j = (n as u64 - i - 1) as usize;
-            goal[j] += 1;
-        }
-        goal
-    };
+    let a = a.iter().copied().sorted().collect_vec();
+    let s: usize = a.iter().copied().sum();
+    let k = s % n;
+    let avg = s / n;
 
-    let ans = (0..n).map(|i| a[i].abs_diff(goal[i])).sum::<u64>() / 2;
+    let mut b = vec![avg; n];
+    for i in n - k..n {
+        b[i] += 1;
+    }
+
+    let ans = (0..n).map(|i| b[i].abs_diff(a[i])).sum::<usize>() / 2;
+
     println!("{}", ans);
 }
