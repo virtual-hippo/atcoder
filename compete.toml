@@ -25,9 +25,9 @@ src = '''
 #![allow(unused_imports)]
 use ac_library::*;
 use itertools::*;
-use proconio::{fastout, input, marker::Chars};
+use proconio::{fastout, input, marker::*};
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet, VecDeque};
+use std::collections::*;
 use superslice::Ext;
 
 #[fastout]
