@@ -1,34 +1,31 @@
-use proconio::{fastout, input};
+use proconio::{fastout, input, marker::Usize1};
+
+fn dfs(n: usize, k: usize, a: &mut Vec<usize>, m: &mut Vec<String>, s: &Vec<String>) {
+    if a.len() == k {
+        m.push(a.iter().map(|&i| s[i].chars()).flatten().collect::<String>());
+        return;
+    }
+
+    for i in 0..n {
+        a.push(i);
+        dfs(n, k, a, m, s);
+        a.pop();
+    }
+}
 
 #[fastout]
 fn main() {
     input! {
         n: usize,
         k: usize,
-        x: usize,
+        x: Usize1,
         s: [String; n],
     }
 
-    let mut jisho = vec![];
-    dfs(n, k, &s, &mut jisho, &mut vec![]);
-    jisho.sort();
+    let mut m = vec![];
+    dfs(n, k, &mut vec![], &mut m, &s);
 
-    println!("{}", jisho[x - 1]);
-}
+    m.sort();
 
-fn dfs(n: usize, k: usize, s: &[String], jisho: &mut Vec<String>, stack: &mut Vec<usize>) {
-    if stack.len() == k {
-        let mut t = String::new();
-        for &i in stack.iter() {
-            t.push_str(&s[i]);
-        }
-        jisho.push(t);
-        return;
-    }
-
-    for i in 0..n {
-        stack.push(i);
-        dfs(n, k, s, jisho, stack);
-        stack.pop();
-    }
+    println!("{}", m[x]);
 }

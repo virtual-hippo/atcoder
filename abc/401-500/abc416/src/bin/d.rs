@@ -1,23 +1,8 @@
-#![allow(unused_imports)]
-use ac_library::*;
 use itertools::*;
-use proconio::{fastout, input, marker::Chars};
-use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::{BTreeMap, HashMap, HashSet};
-use superslice::Ext;
+use proconio::input;
+use std::collections::BTreeMap;
 
-#[fastout]
-fn main() {
-    input! {
-        t: usize,
-    }
-
-    for _ in 0..t {
-        solve();
-    }
-}
-
-fn solve() {
+pub fn solve() {
     input! {
         n: usize,
         m: usize,
@@ -25,27 +10,70 @@ fn solve() {
         b: [usize; n],
     }
 
-    let a = a
-        .iter()
-        .map(|&x| x % m)
-        .sorted_by_key(|v| std::cmp::Reverse(*v))
-        .collect::<Vec<_>>();
-    let b = b.iter().map(|&x| x % m).sorted().collect::<Vec<_>>();
+    let a = a.iter().copied().map(|v| v % m).collect_vec();
+    let b = b.iter().copied().map(|v| v % m).collect_vec();
 
-    let mut c = 0;
-    let mut idx = 0;
-
-    for v in a.iter() {
-        while idx < n && b[idx] + *v < m {
-            idx += 1;
-        }
-        if idx >= n {
-            break;
-        }
-        c += 1;
-        idx += 1;
+    let mut map = BTreeMap::new();
+    for i in 0..n {
+        *map.entry(a[i]).or_insert(0) += 1;
     }
 
-    let ans = a.iter().sum::<usize>() + b.iter().sum::<usize>() - c * m;
+    let mut ans = 0;
+    for i in 0..n {
+        let c = m - b[i];
+
+        let (ai, cnt) = if let Some((&ai, &cnt)) = map.range(c..).next() {
+            (ai, cnt)
+        } else {
+            let (&ai, &cnt) = map.iter().next().unwrap();
+            (ai, cnt)
+        };
+        ans += (ai + b[i]) % m;
+        if cnt == 1 {
+            map.remove(&ai);
+        } else {
+            map.insert(ai, cnt - 1);
+        }
+    }
+
     println!("{}", ans);
+}
+
+fn solve1() {
+    input! {
+        n: usize,
+        m: u64,
+        a: [u64; n],
+        b: [u64; n],
+    }
+
+    let aa = a.iter().copied().sorted_by_key(|&v| std::cmp::Reverse(v)).collect_vec();
+    let bb = b.iter().copied().sorted().collect_vec();
+
+    let mut j = 0;
+    let mut c = 0;
+
+    for i in 0..n {
+        while j < n && aa[i] + bb[j] < m {
+            j += 1;
+        }
+
+        if j >= n {
+            break;
+        }
+
+        c += 1;
+        j += 1;
+    }
+
+    let ans = a.iter().sum::<u64>() + b.iter().sum::<u64>() - c * m;
+    println!("{}", ans);
+}
+
+fn main() {
+    input! {
+        t: usize,
+    }
+
+    (0..t).for_each(|_| solve1());
 }
