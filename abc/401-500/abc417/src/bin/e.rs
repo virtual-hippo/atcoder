@@ -1,32 +1,24 @@
-use proconio::marker::Usize1;
-use proconio::{fastout, input};
+use itertools::*;
+use proconio::{input, marker::*};
 
-fn dfs(visited: &mut Vec<bool>, graph: &Vec<Vec<usize>>, u: usize, path: &mut Vec<usize>, y: usize) {
-    if visited[y] {
-        return;
-    }
-    visited[u] = true;
-
-    if u == y {
-        for i in 0..path.len() {
-            if i < path.len() - 1 {
-                print!("{} ", path[i] + 1);
-            } else {
-                println!("{}", path[i] + 1);
-            }
-        }
-        return;
+fn dfs(to: &Vec<Vec<usize>>, visited: &mut Vec<bool>, v: usize, y: usize, his: &mut Vec<usize>) -> bool {
+    visited[v] = true;
+    his.push(v);
+    if v == y {
+        return true;
     }
 
-    for &v in graph[u].iter() {
-        if visited[v] {
+    for &u in to[v].iter() {
+        if visited[u] {
             continue;
         }
 
-        path.push(v);
-        dfs(visited, graph, v, path, y);
-        path.pop();
+        if dfs(to, visited, u, y, his) {
+            return true;
+        }
     }
+    his.pop();
+    false
 }
 
 fn solve() {
@@ -37,30 +29,35 @@ fn solve() {
         y: Usize1,
     }
 
-    let g = {
-        let mut g = vec![vec![]; n];
+    let mut to = vec![vec![]; n];
 
-        for _ in 0..m {
-            input! {
-                u: Usize1,
-                v: Usize1,
-            }
-            g[u].push(v);
-            g[v].push(u);
+    for _ in 0..m {
+        input! {
+            u: Usize1,
+            v: Usize1,
         }
-        for u in 0..n {
-            g[u].sort();
-        }
-        g
-    };
+        to[u].push(v);
+        to[v].push(u);
+    }
 
-    dfs(&mut vec![false; n], &g, x, &mut vec![x], y);
+    for i in 0..n {
+        to[i].sort();
+    }
+
+    let mut his = vec![];
+    dfs(&to, &mut vec![false; n], x, y, &mut his);
+    let ans = his.iter().copied().map(|v| v + 1).collect_vec();
+    print_vec_1line(&ans);
 }
 
-#[fastout]
 fn main() {
     input! {
         t: usize,
     }
     (0..t).for_each(|_| solve());
+}
+
+pub fn print_vec_1line<T: std::fmt::Display>(arr: &[T]) {
+    let msg = arr.iter().map(|x| format!("{}", x)).join(" ");
+    println!("{}", msg);
 }
