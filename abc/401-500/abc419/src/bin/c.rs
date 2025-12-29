@@ -1,34 +1,17 @@
-#![allow(unused_imports)]
-use ac_library::*;
-use itertools::*;
-use proconio::{fastout, input, marker::Chars};
-use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::{HashMap, HashSet, VecDeque};
-use superslice::Ext;
+use proconio::{fastout, input};
 
 #[fastout]
 fn main() {
     input! {
         n: usize,
+        rc: [(i64,i64); n],
     }
 
-    let mut map = FxHashMap::default();
+    let dh_mx = (0..n).map(|i| rc[i].0).max().unwrap() - (0..n).map(|i| rc[i].0).min().unwrap();
+    let dw_mx = (0..n).map(|i| rc[i].1).max().unwrap() - (0..n).map(|i| rc[i].1).min().unwrap();
 
-    for _ in 0..n {
-        input! {
-            rc: (i64,i64),
-        }
-        *map.entry(rc).or_insert(0) += 1;
-    }
-    if map.len() == 1 {
-        println!("0");
-        return;
-    }
+    let mx = dh_mx.max(dw_mx);
 
-    let r = map.keys().copied().map(|(r, _)| r).sorted().collect::<Vec<_>>();
-    let c = map.keys().copied().map(|(_, c)| c).sorted().collect::<Vec<_>>();
-    let d = (r[r.len() - 1] - r[0]).max(c[c.len() - 1] - c[0]);
-
-    let ans = if d % 2 == 0 { d / 2 } else { d / 2 + 1 };
+    let ans = if mx % 2 == 0 { mx / 2 } else { mx / 2 + 1 };
     println!("{}", ans);
 }
