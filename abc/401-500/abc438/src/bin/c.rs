@@ -7,33 +7,21 @@ fn main() {
         a: [usize; n],
     }
 
-    let mut stack = vec![];
-
-    let mut ans = a.len();
-
-    for i in 0..n {
-        if stack.len() == 0 {
-            stack.push((a[i], 1));
-            continue;
+    let stack = a.iter().fold(Vec::new(), |mut stack, &x| {
+        match stack.last_mut() {
+            Some((val, count)) if *val == x && *count + 1 == 4 => {
+                stack.pop();
+            },
+            Some((val, count)) if *val == x => {
+                *count += 1;
+            },
+            _ => {
+                stack.push((x, 1));
+            },
         }
+        stack
+    });
 
-        let tail = stack.len() - 1;
-
-        if stack[tail].0 == a[i] {
-            stack[tail].1 += 1;
-
-            if stack[tail].1 >= 4 {
-                stack[tail].1 -= 4;
-                ans -= 4;
-
-                if stack[tail].1 == 0 {
-                    stack.pop();
-                }
-            }
-        } else {
-            stack.push((a[i], 1));
-        }
-    }
-
+    let ans: usize = stack.iter().map(|(_, count)| count).sum();
     println!("{}", ans);
 }
