@@ -30,7 +30,7 @@ fn main() {
             cnt_x[i + 1][a[i]] += 1;
         }
     }
-    
+
     let mut ans = 0;
     for i in 0..n {
         if s[i] != 'E' {
@@ -48,5 +48,35 @@ fn main() {
             }
         }
     }
+    println!("{}", ans);
+}
+
+pub fn solve2() {
+    input! {
+        n: usize,
+        a: [usize; n],
+        s: Chars,
+    }
+
+    const MEX: [char; 3] = ['M', 'E', 'X'];
+
+    let mut init = vec![vec![0; 8]; 4];
+    init[0][0] = 1;
+
+    let dp = (0..n).fold(init, |mut dp, i| {
+        let j = MEX.iter().position(|&ch| ch == s[i]).unwrap() + 1;
+
+        for k in 0..8 {
+            dp[j][k | 1 << a[i]] += dp[j - 1][k];
+        }
+
+        dp
+    });
+
+    fn mex(k: usize) -> usize {
+        (0..).find(|&i| (k >> i) & 1 != 1).unwrap()
+    }
+
+    let ans = (0..8).map(|k| dp[3][k] * mex(k)).sum::<usize>();
     println!("{}", ans);
 }
