@@ -1,33 +1,24 @@
-use proconio::input;
-use proconio::marker::Chars;
+use proconio::{fastout, input, marker::*};
 
-const OFF: usize = 0;
-const ON: usize = 1;
-
+#[fastout]
 fn main() {
     input! {
-        x: i64,
-        y: i64,
-        z: i64,
+        x: usize,
+        y: usize,
+        z: usize,
         s: Chars,
     }
-    let mut dp = vec![[0, 0]; s.len()];
-    if s[0] == 'a' {
-        dp[0][OFF] = x;
-        dp[0][ON] = z + y;
-    } else {
-        dp[0][OFF] = y;
-        dp[0][ON] = z + x;
-    }
 
-    for i in 1..dp.len() {
+    let init = if s[0] == 'a' { [x, z + y] } else { [y, z + x] };
+
+    let dp = (1..s.len()).fold(init, |old, i| {
         if s[i] == 'a' {
-            dp[i][OFF] = std::cmp::min(dp[i-1][OFF] + x, dp[i-1][ON] + z + x);
-            dp[i][ON] = std::cmp::min(dp[i-1][ON] + y, dp[i-1][OFF] + z + y);
+            [(old[0] + x).min(old[1] + z + x), (old[1] + y).min(old[0] + z + y)]
         } else {
-            dp[i][OFF] = std::cmp::min(dp[i-1][OFF] + y, dp[i-1][ON] + z + y);
-            dp[i][ON] = std::cmp::min(dp[i-1][ON] + x, dp[i-1][OFF] + z + x);
+            [(old[0] + y).min(old[1] + z + y), (old[1] + x).min(old[0] + z + x)]
         }
-    }
-    println!("{}", std::cmp::min(dp[s.len()-1][OFF], dp[s.len()-1][ON]));
+    });
+
+    let ans = dp[0].min(dp[1]);
+    println!("{}", ans);
 }
