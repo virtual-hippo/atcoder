@@ -35,29 +35,17 @@ fn solve() {
     println!("{}", ans);
 }
 
-fn solve2() {
+fn solve() {
     input! {
         n: usize,
         s: Chars,
     }
 
-    let mut dp = vec![[usize::MAX; 3]; n + 1];
-    // 0: 1 区間に入る前
-    // 1: 1 区間の中
-    // 2: 1 区間を出た
-    dp[0][0] = 0;
-    dp[0][1] = 0;
-    dp[0][2] = 0;
+    let dp = (0..n).fold([0, 0, 0], |old: [usize; 3], i| {
+        let (cost_0, cost_1) = if s[i] == '0' { (0, 1) } else { (1, 0) };
+        [old[0] + cost_0, old[0].min(old[1]) + cost_1, old[1].min(old[2]) + cost_0]
+    });
 
-    for i in 1..n + 1 {
-        let ns = s[i - 1];
-        dp[i][0] = dp[i - 1][0] + if ns == '0' { 0 } else { 1 };
-
-        dp[i][1] = dp[i][1].min(dp[i - 1][0] + if ns == '0' { 1 } else { 0 });
-        dp[i][1] = dp[i][1].min(dp[i - 1][1] + if ns == '0' { 1 } else { 0 });
-
-        dp[i][2] = dp[i][2].min(dp[i - 1][1] + if ns == '0' { 0 } else { 1 });
-        dp[i][2] = dp[i][2].min(dp[i - 1][2] + if ns == '0' { 0 } else { 1 });
-    }
-    println!("{}", dp[n].iter().min().unwrap());
+    let ans = dp.into_iter().min().unwrap();
+    println!("{}", ans);
 }
