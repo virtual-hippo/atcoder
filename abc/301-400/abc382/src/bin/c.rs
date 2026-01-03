@@ -43,3 +43,35 @@ pub fn binary_search<F: Fn(usize) -> bool>(initial_pos: (i64, i64), is_ok: F) ->
     }
     (left as usize, right as usize)
 }
+
+fn solve2() {
+    input! {
+        n: usize,
+        m: usize,
+        a: [usize; n],
+        b: [usize; m],
+    }
+
+    let mut ans = vec![-1; m];
+    let b = b
+        .iter()
+        .copied()
+        .enumerate()
+        .sorted_by_key(|&(i, v)| (std::cmp::Reverse(v), i))
+        .collect_vec();
+
+    let mut i = 0;
+    for j in 0..m {
+        while i < n && b[j].1 < a[i] {
+            i += 1;
+        }
+        if i == n {
+            break;
+        }
+        ans[b[j].0] = i as i64 + 1;
+    }
+
+    for j in 0..m {
+        println!("{}", ans[j]);
+    }
+}
