@@ -1,53 +1,5 @@
-#![allow(unused_imports)]
-use ac_library::FenwickTree;
-use proconio::{fastout, input, marker::Chars};
-use std::collections::{HashMap, HashSet};
-
-#[fastout]
-fn main() {
-    input! {
-        n: usize,
-    }
-
-    let m = 2_000_000;
-    let mut set = HashSet::new();
-
-    let mmm = sieve_of_eratosthenes(m);
-    let sosu: Vec<usize> = mmm
-        .iter()
-        .enumerate()
-        .filter(|(_, v)| **v)
-        .map(|(i, _)| i)
-        .collect();
-    let len = sosu.len();
-    for i in 0..len {
-        let v = ((sosu[i].pow(2)).pow(2)).pow(2);
-        if v > n {
-            break;
-        }
-        set.insert(v);
-    }
-
-    for i in 0..len {
-        for j in i + 1..len {
-            if sosu[i].pow(2) > n / (sosu[j].pow(2)) {
-                break;
-            }
-            let v = sosu[i].pow(2) * sosu[j].pow(2);
-            if v > n {
-                break;
-            }
-            let v = sosu[i].pow(2) * sosu[j].pow(2);
-            if v > n {
-                break;
-            }
-            set.insert(v);
-        }
-    }
-
-    let ans = set.len();
-    println!("{}", ans);
-}
+use itertools::*;
+use proconio::{fastout, input};
 
 pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
     // 素数がtrueとなったベクタ
@@ -66,4 +18,38 @@ pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
         }
     }
     is_prime
+}
+
+#[fastout]
+fn main() {
+    input! {
+        n: usize,
+    }
+
+    let sosu = sieve_of_eratosthenes(2_000_000)
+        .iter()
+        .enumerate()
+        .filter(|&(_, &v)| v)
+        .map(|(i, _)| i)
+        .collect_vec();
+
+    let ans0 = sosu
+        .iter()
+        .filter(|&&x| x <= (n.isqrt() + 1).isqrt().isqrt())
+        .take_while(|x| x.pow(8 as u32) <= n)
+        .count();
+
+    let ans1 = (0..sosu.len())
+        .filter(|&i| sosu[i] * sosu[i] <= n)
+        .map(|i| {
+            let pp = sosu[i] * sosu[i];
+
+            ((i + 1)..sosu.len())
+                .take_while(|&j| sosu[j] * sosu[j] <= n / pp + 1)
+                .filter(|&j| pp * sosu[j] * sosu[j] <= n)
+                .count()
+        })
+        .sum::<usize>();
+
+    println!("{}", ans0 + ans1);
 }
