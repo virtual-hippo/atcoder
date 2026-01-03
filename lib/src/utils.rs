@@ -12,3 +12,21 @@ pub fn digits_to_vec(x: usize) -> Vec<usize> {
         digits_to_vec(x / 10).into_iter().chain(std::iter::once(x % 10)).collect()
     }
 }
+
+///
+/// 桁数を計算
+/// ```
+/// use abclib::utils::num_digits;
+/// assert_eq!(num_digits(0), 1);
+/// assert_eq!(num_digits(5), 1);
+/// assert_eq!(num_digits(125), 3);
+/// assert_eq!(num_digits(12345), 5);
+/// assert_eq!(num_digits(123456789012345), 15);
+/// ```
+pub fn num_digits(x: u64) -> usize {
+    if x == 0 {
+        1
+    } else {
+        x.ilog10() as usize + 1
+    }
+}
