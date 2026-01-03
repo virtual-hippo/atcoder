@@ -11,7 +11,11 @@ fn main() {
 
     for i in 0..n {
         let a = a[i];
+
         let i = dp.lower_bound(&a);
+
+        // 以下のようにも書ける
+        // let i = dp.partition_point(|&v| v < a);
 
         if i == dp.len() {
             dp.push(a);
