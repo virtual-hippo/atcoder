@@ -499,6 +499,9 @@ for i in 1..=M {
         j += i;
     }
 }
+for i in 1..M {
+    divs[i].push(i);
+}
 ```
 
 ## グリッド問題の盆栽
