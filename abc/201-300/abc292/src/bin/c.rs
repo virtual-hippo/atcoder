@@ -1,35 +1,27 @@
-use proconio::input;
+use itertools::*;
+use proconio::{fastout, input};
 
-fn get_primes(n: usize) -> Vec<usize> {
-    let mut i = 1;
-    let mut ret = vec![];
-    while i * i <= n {
-        if i * i == n {
-            ret.push(i);
-        } else if n % i == 0 {
-            ret.push(i);
-            ret.push(n/i);
-        }
-        i += 1;
-    }
-    ret
-}
-
+#[fastout]
 fn main() {
     input! {
         n: usize,
     }
-    let mut vec = vec![0; n];
 
-    for i in 1..n {
-        let primes = get_primes(i);
-        vec[i] = primes.len();
+    const M: usize = 200_005;
+    let mut divs = vec![vec![]; M];
+    for i in 1..=M {
+        let mut j = i * 2;
+        while j < M {
+            divs[j].push(i);
+            j += i;
+        }
     }
-    
-    let mut ans = 0_u64;
-    for i in 1..n {
-        ans += vec[i] as u64 * vec[n-i] as u64;
+    for i in 1..M {
+        divs[i].push(i);
     }
+
+    let cnt = (0..n).map(|i| divs[i].len() as u64).collect_vec();
+
+    let ans = (1..n).map(|i| cnt[i] * cnt[n - i]).sum::<u64>();
     println!("{}", ans);
 }
-
