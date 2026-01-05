@@ -33,10 +33,7 @@ fn main() {
     });
 
     for i in 1..r {
-        let ans = (0..m)
-            .rev()
-            .filter(|&d| (k / (1_usize << d)) % 2 != 0)
-            .fold(i, |now, d| dp[d][now]);
+        let ans = (0..m).rev().filter(|&d| k >> d & 1 == 1).fold(i, |now, d| dp[d][now]);
         println!("{}", ans);
     }
 }

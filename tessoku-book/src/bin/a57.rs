@@ -23,7 +23,7 @@ fn main() {
             y: usize,
         }
 
-        let ans = (0..30).rev().filter(|&j| (y / (1 << j)) % 2 != 0).fold(x, |now, d| dp[d][now]) + 1;
+        let ans = (0..30).rev().filter(|&j| y >> j & 1 == 1).fold(x, |now, d| dp[d][now]) + 1;
 
         println!("{}", ans);
     }
