@@ -21,13 +21,13 @@ pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
     is_prime
 }
 
-pub fn get_sosu() -> Vec<usize> {
-    let sosu = sieve_of_eratosthenes(2_000_000)
+pub fn get_primes() -> Vec<usize> {
+    let primes = sieve_of_eratosthenes(2_000_000)
         .iter()
         .enumerate()
         .filter(|&(_, &v)| v)
         .map(|(i, _)| i)
         .collect_vec();
 
-    sosu
+    primes
 }
