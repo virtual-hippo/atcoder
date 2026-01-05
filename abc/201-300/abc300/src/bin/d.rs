@@ -1,6 +1,8 @@
 use proconio::input;
 
-fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
+///! エラトステネスの篩
+///! https://algo-method.com/descriptions/64
+pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
     // 素数がtrueとなったベクタ
     let mut is_prime = vec![true; n + 1];
     is_prime[0] = false;
@@ -23,30 +25,24 @@ fn main() {
     input! {
         n: usize,
     }
-    let koho: Vec<usize> = sieve_of_eratosthenes(1_000_000)
-        .iter()
-        .enumerate()
-        .filter(|&(_, &v)| v)
-        .map(|(i, _)| i)
-        .collect();
-    let mut cnt = 0;
-    for i in 0..koho.len()-2 {
-        if koho[i] * koho[i] * koho[i] * koho[i] * koho[i] > n {
-            break;
-        }
-        for j in i+1..koho.len()-1 {
-            if koho[i] * koho[i] * koho[j] * koho[j] * koho[j] > n {
-                break;
-            }
-            for k in j+1..koho.len() {
-                if koho[i] * koho[i] * koho[j] * koho[k] * koho[k] > n {
-                    break;
-                }
-                if koho[i] * koho[i] * koho[j] * koho[k] * koho[k] <= n {
-                    cnt += 1;
-                }
-            }
-        }
-    }
-    println!("{}", cnt);
+
+    let primes = sieve_of_eratosthenes(1_000_100);
+
+    let ans = (2_usize..)
+        .take_while(|&a| a.pow(5) <= n)
+        .filter(|&a| primes[a])
+        .map(|a| {
+            ((a + 1)..)
+                .take_while(|&b| a.pow(2) * b * (b + 1).pow(2) <= n)
+                .filter(|&b| primes[b])
+                .map(|b| {
+                    ((b + 1)..)
+                        .take_while(|&c| a.pow(2) * b * c.pow(2) <= n)
+                        .filter(|&c| primes[c])
+                        .count()
+                })
+                .sum::<usize>()
+        })
+        .sum::<usize>();
+    println!("{}", ans);
 }
