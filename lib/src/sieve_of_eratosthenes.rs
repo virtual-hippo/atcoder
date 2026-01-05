@@ -4,21 +4,19 @@ use itertools::*;
 ///! https://algo-method.com/descriptions/64
 pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
     // 素数がtrueとなったベクタ
-    let mut is_prime = vec![true; n + 1];
-    is_prime[0] = false;
-    is_prime[1] = false;
+    let mut init = vec![true; n + 1];
+    init[0] = false;
+    init[1] = false;
 
-    for i in 2..n + 1 {
-        if is_prime[i] == false {
-            continue;
+    (2..n + 1).fold(init, |mut acc, x| {
+        if acc[x] {
+            // x の倍数は素数ではないと判定する
+            ((x * 2)..).step_by(x).take_while(|&y| y < n + 1).for_each(|y| {
+                acc[y] = false;
+            });
         }
-        let mut j = i * 2;
-        while j < n + 1 {
-            is_prime[j] = false;
-            j += i;
-        }
-    }
-    is_prime
+        acc
+    })
 }
 
 pub fn get_primes() -> Vec<usize> {
