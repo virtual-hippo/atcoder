@@ -8,6 +8,7 @@ pub mod gcd;
 pub mod grid;
 pub mod mint;
 pub mod prime_factorize;
+pub mod range_fenwick_tree;
 pub mod range_map;
 pub mod recursive;
 pub mod rolling_hash;
