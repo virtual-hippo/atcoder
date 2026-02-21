@@ -1,4 +1,4 @@
-// 以下からパクった
+// 以下から移植
 // https://github.com/atcoder/live_library/blob/master/comb.cpp
 pub mod comb {
     use ac_library::modint::ModIntBase;
