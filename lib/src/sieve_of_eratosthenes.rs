@@ -1,7 +1,7 @@
 use itertools::*;
 
-///! エラトステネスの篩
-///! https://algo-method.com/descriptions/64
+// エラトステネスの篩
+// https://algo-method.com/descriptions/64
 pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
     // 素数がtrueとなったベクタ
     let mut init = vec![true; n + 1];
@@ -17,17 +17,6 @@ pub fn sieve_of_eratosthenes(n: usize) -> Vec<bool> {
         }
         acc
     })
-}
-
-pub fn get_primes() -> Vec<usize> {
-    let primes = sieve_of_eratosthenes(2_000_000)
-        .iter()
-        .enumerate()
-        .filter(|&(_, &v)| v)
-        .map(|(i, _)| i)
-        .collect_vec();
-
-    primes
 }
 
 // abc445-e (1 - N までの素因数を高速に求めることができる)
@@ -69,13 +58,11 @@ impl Sieve {
         1 < x && self.f[x] == x
     }
 
-    pub fn factor_list(&self, mut x: usize) -> Vec<usize> {
-        let mut factors = vec![];
-        while x > 1 {
-            factors.push(self.f[x]);
-            x /= self.f[x];
-        }
-        factors
+    pub fn factor_list(&self, x: usize) -> Vec<usize> {
+        iterate(x, |&s| s / self.f[s])
+            .take_while(|&s| s > 1)
+            .map(|s| self.f[s])
+            .collect()
     }
 
     pub fn factor(&self, x: usize) -> Vec<(usize, usize)> {
