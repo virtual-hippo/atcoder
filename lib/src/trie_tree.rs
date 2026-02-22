@@ -1,23 +1,39 @@
-/// トライ木
+/// トライ木（Trie）
+///
+/// 文字列を効率的に管理する木構造。各ノードが1文字に対応し、根から葉へのパスが1つの文字列を表す。
+/// 文字列の追加・検索が O(|s|) で行え、共通の接頭辞を持つ文字列はノードを共有するためメモリ効率も高い。
+///
 /// 参考:
 /// - https://algo-logic.info/trie-tree/
 pub mod trie_tree {
 
     #[derive(Debug)]
     pub struct TrieNode {
-        to: Vec<usize>,
+        to: [usize; 26],
         end_of_word: bool,
     }
 
     impl TrieNode {
         pub fn new() -> Self {
-            Self { to: vec![usize::MAX; 26], end_of_word: false }
+            Self { to: [usize::MAX; 26], end_of_word: false }
+        }
+    }
+
+    impl Default for TrieNode {
+        fn default() -> Self {
+            Self::new()
         }
     }
 
     #[derive(Debug)]
     pub struct TrieTree {
         nodes: Vec<TrieNode>,
+    }
+
+    impl Default for TrieTree {
+        fn default() -> Self {
+            Self::new()
+        }
     }
 
     impl TrieTree {
@@ -28,6 +44,7 @@ pub mod trie_tree {
         pub fn add(&mut self, s: &str) {
             let mut v = 0;
             for ch in s.chars() {
+                debug_assert!(ch.is_ascii_lowercase());
                 let u = (ch as u8 - 'a' as u8) as usize;
 
                 if self.nodes[v].to[u] == usize::MAX {
@@ -44,6 +61,7 @@ pub mod trie_tree {
         pub fn contains(&self, s: &str) -> bool {
             let mut v = 0;
             for ch in s.chars() {
+                debug_assert!(ch.is_ascii_lowercase());
                 let u = (ch as u8 - 'a' as u8) as usize;
                 if self.nodes[v].to[u] == usize::MAX {
                     return false;
