@@ -1,29 +1,31 @@
 /// ダイクストラ法
-/// 重み付きグラフの最短経路を求める
+/// 重み付きグラフの単一始点最短経路を求める
+/// graph[v] = [(next, cost), ...] の隣接リスト形式
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-pub fn dijkstra(graph: &Vec<Vec<(usize, i64)>>, n: usize) -> Vec<i64> {
+pub fn dijkstra(graph: &[Vec<(usize, i64)>], start: usize) -> Vec<i64> {
+    let n = graph.len();
     let mut heap = BinaryHeap::new();
-    let mut kakutei = vec![false; n];
+    let mut visited = vec![false; n];
     let mut costs = vec![i64::MAX; n];
-    costs[0] = 0;
-    heap.push((Reverse(costs[0]), 0));
-    while let Some((_, pos)) = heap.pop() {
-        if kakutei[pos] {
+    costs[start] = 0;
+    heap.push((Reverse(0i64), start));
+
+    while let Some((Reverse(cost), pos)) = heap.pop() {
+        if visited[pos] {
             continue;
         }
+        visited[pos] = true;
 
-        kakutei[pos] = true;
-        for i in 0..graph[pos].len() {
-            let next = graph[pos][i].0;
-            let cost = graph[pos][i].1;
-            if costs[next] > costs[pos] + cost {
-                costs[next] = costs[pos] + cost;
-                heap.push((Reverse(costs[next]), next));
+        for &(next, edge_cost) in &graph[pos] {
+            let next_cost = cost + edge_cost;
+            if costs[next] > next_cost {
+                costs[next] = next_cost;
+                heap.push((Reverse(next_cost), next));
             }
         }
     }
 
-    return costs;
+    costs
 }
