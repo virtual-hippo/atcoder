@@ -25,12 +25,11 @@ src = '''
 #![allow(unused_imports)]
 use ac_library::*;
 use itertools::*;
-use proconio::{fastout, input, marker::*};
+use proconio::{input, marker::*};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::*;
 use superslice::Ext;
 
-#[fastout]
 fn main() {
     input! {
         n: usize,
@@ -47,7 +46,6 @@ pub fn print_vec_1line<T: std::fmt::Display>(arr: &[T]) {
     let msg = arr.iter().map(|x| format!("{}", x)).join(" ");
     println!("{}", msg);
 }
-
 '''
 
 [template.new]
