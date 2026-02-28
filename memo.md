@@ -203,6 +203,18 @@ let s = vec!['a', 'b', 'c', 'd', 'e'];
 let new_s = s[0..(s.len()-1)/2].iter().map(|&ch| ch).collect();
 ```
 
+### 末尾要素を取得・変更する (C++ の back())
+
+```rust
+// 末尾を読む
+let last = vec.last().unwrap();
+
+// 末尾を変更する (C++ の vec.back()++ に相当)
+*vec.last_mut().unwrap() += 1;
+```
+
+`last_mut()` は `Option<&mut T>` を返すので `unwrap()` してデリファレンスする。
+
 ## DP
 
 ### 部分和 DP
