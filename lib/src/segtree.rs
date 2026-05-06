@@ -58,6 +58,10 @@ impl Monoid for GcdU64 {
     }
 }
 
+///
+/// f ∘ g (= f(g(x)) で実装しているため, prod は配列の右側ほど先に適用される(通常とは逆の向き).
+/// AtCoder での実用性を考えると修正したほう良さそう
+///
 pub struct Affine(Infallible);
 impl Monoid for Affine {
     type S = (i64, i64);
@@ -161,13 +165,7 @@ impl<M: Monoid> Segtree<M> {
 
     pub fn set(&mut self, i: usize, x: M::S) {
         debug_assert!(i < self.n);
-
-        let mut p = i + self.size;
-        self.data[p] = x;
-        while p > 1 {
-            p >>= 1;
-            self.update(p);
-        }
+        self.apply(i, move |_| x);
     }
 
     pub fn get(&self, i: usize) -> &M::S {
