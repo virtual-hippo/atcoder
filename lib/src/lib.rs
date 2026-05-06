@@ -10,6 +10,7 @@ pub mod range_fenwick_tree;
 pub mod range_map;
 pub mod recursive;
 pub mod rolling_hash;
+pub mod segtree;
 pub mod sieve_of_eratosthenes;
 pub mod sum_floor;
 mod trie_tree;
